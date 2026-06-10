@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ClassroomProvider } from "@/context/ClassroomContext";
 import { Analytics } from "@vercel/analytics/next"
+import { SpeedInsights } from '@vercel/speed-insights/next';
 import "./globals.css";
 
 
@@ -18,6 +19,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Student Analytics & Classroom Management System",
   description: "A premium classroom dashboard and analytic suite for teachers",
+  icons: {
+    icon: "/favicon.png",
+  },
 };
 
 export default function RootLayout({
@@ -34,6 +38,7 @@ export default function RootLayout({
         <ClassroomProvider>
           {children}
           <Analytics />
+          <SpeedInsights />
         </ClassroomProvider>
       </body>
     </html>
