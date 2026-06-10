@@ -17,6 +17,20 @@ import {
   Lock
 } from "lucide-react";
 
+const WEEKDAYS = ["จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์", "อาทิตย์"];
+const WEEKDAYS_SHORT = ["จ.", "อ.", "พ.", "พฤ.", "ศ.", "ส.", "อา."];
+
+const parseScheduleDaysStr = (scheduleStr: string): string[] => {
+  if (!scheduleStr) return ["จันทร์"];
+  const days: string[] = [];
+  for (const day of WEEKDAYS) {
+    if (scheduleStr.includes(day)) {
+      days.push(day);
+    }
+  }
+  return days.length > 0 ? days : ["จันทร์"];
+};
+
 export default function ClassroomsPage() {
   const {
     classrooms,
@@ -31,12 +45,14 @@ export default function ClassroomsPage() {
   const [isCreating, setIsCreating] = useState(false);
   const [newClassName, setNewClassName] = useState("");
   const [newWeeklySchedule, setNewWeeklySchedule] = useState("ทุกวันจันทร์");
+  const [newWeeklyScheduleDays, setNewWeeklyScheduleDays] = useState<string[]>(["จันทร์"]);
   const [newStartDate, setNewStartDate] = useState(new Date().toISOString().split("T")[0]);
   const [newTotalWeeks, setNewTotalWeeks] = useState(18);
 
   // Editing state (loaded from currentClassroom)
   const [editName, setEditName] = useState("");
   const [editSchedule, setEditSchedule] = useState("");
+  const [editScheduleDays, setEditScheduleDays] = useState<string[]>([]);
   const [editStartDate, setEditStartDate] = useState("");
   const [editTotalWeeks, setEditTotalWeeks] = useState(18);
 
@@ -74,6 +90,7 @@ export default function ClassroomsPage() {
     if (currentClassroom) {
       setEditName(currentClassroom.name || "");
       setEditSchedule(currentClassroom.weekly_schedule || "ทุกวันจันทร์");
+      setEditScheduleDays(parseScheduleDaysStr(currentClassroom.weekly_schedule || "ทุกวันจันทร์"));
       setEditStartDate(currentClassroom.semester_start_date || new Date().toISOString().split("T")[0]);
       setEditTotalWeeks(currentClassroom.total_weeks || 18);
       
@@ -115,6 +132,7 @@ export default function ClassroomsPage() {
     setCurrentClassroom(cls);
     setEditName(cls.name);
     setEditSchedule(cls.weekly_schedule);
+    setEditScheduleDays(parseScheduleDaysStr(cls.weekly_schedule));
     setEditStartDate(cls.semester_start_date);
     setEditTotalWeeks(cls.total_weeks);
 
@@ -205,10 +223,17 @@ export default function ClassroomsPage() {
     setNotification(null);
     if (!newClassName.trim()) return;
 
+    if (newWeeklyScheduleDays.length === 0) {
+      setNotification({ type: "error", msg: "กรุณาเลือกวันเรียนอย่างน้อย 1 วัน" });
+      return;
+    }
+
     try {
-      const cls = await createClassroom(newClassName, newWeeklySchedule, newStartDate, newTotalWeeks);
+      const scheduleString = newWeeklyScheduleDays.join(", ");
+      const cls = await createClassroom(newClassName, scheduleString, newStartDate, newTotalWeeks);
       setIsCreating(false);
       setNewClassName("");
+      setNewWeeklyScheduleDays(["จันทร์"]);
       handleSelectClass(cls);
       setNotification({ type: "success", msg: "สร้างห้องเรียนสำเร็จ!" });
     } catch (err: any) {
@@ -257,6 +282,14 @@ export default function ClassroomsPage() {
       return;
     }
 
+    if (editScheduleDays.length === 0) {
+      setNotification({ type: "error", msg: "กรุณาเลือกวันเรียนอย่างน้อย 1 วัน" });
+      setSaving(false);
+      return;
+    }
+
+    const scheduleString = editScheduleDays.join(", ");
+
     const finalWeights: { [key: string]: number } = {};
     const finalModes: { [key: string]: string } = {};
     categories.forEach((cat) => {
@@ -267,7 +300,7 @@ export default function ClassroomsPage() {
     try {
       await updateClassroom({
         name: editName,
-        weekly_schedule: editSchedule,
+        weekly_schedule: scheduleString,
         semester_start_date: editStartDate,
         total_weeks: editTotalWeeks,
         grade_weights: finalWeights as any,
@@ -357,20 +390,38 @@ export default function ClassroomsPage() {
                 </div>
 
                 <div>
-                  <label className="text-[10px] uppercase font-bold text-slate-400">วันเข้าเรียน</label>
-                  <select
-                    value={newWeeklySchedule}
-                    onChange={(e) => setNewWeeklySchedule(e.target.value)}
-                    className="w-full mt-1 px-3 py-2 rounded-xl bg-white border border-slate-200 focus:border-primary-500 outline-none text-xs text-slate-700 glow-input"
-                  >
-                    <option value="ทุกวันจันทร์">ทุกวันจันทร์</option>
-                    <option value="ทุกวันอังคาร">ทุกวันอังคาร</option>
-                    <option value="ทุกวันพุธ">ทุกวันพุธ</option>
-                    <option value="ทุกวันพฤหัสบดี">ทุกวันพฤหัสบดี</option>
-                    <option value="ทุกวันศุกร์">ทุกวันศุกร์</option>
-                    <option value="ทุกวันเสาร์">ทุกวันเสาร์</option>
-                    <option value="ทุกวันอาทิตย์">ทุกวันอาทิตย์</option>
-                  </select>
+                  <label className="text-[10px] uppercase font-bold text-slate-400">วันเรียนในสัปดาห์ (เลือกได้หลายวัน)</label>
+                  <div className="flex flex-wrap gap-1.5 mt-1.5">
+                    {WEEKDAYS.map((day, idx) => {
+                      const isSelected = newWeeklyScheduleDays.includes(day);
+                      return (
+                        <button
+                          key={day}
+                          type="button"
+                          onClick={() => {
+                            if (isSelected) {
+                              if (newWeeklyScheduleDays.length > 1) {
+                                setNewWeeklyScheduleDays(newWeeklyScheduleDays.filter((d) => d !== day));
+                              }
+                            } else {
+                              setNewWeeklyScheduleDays([...newWeeklyScheduleDays, day]);
+                            }
+                          }}
+                          className={`w-8 h-8 flex items-center justify-center rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                            isSelected
+                              ? "bg-primary-600 border-primary-600 text-white shadow-sm"
+                              : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
+                          }`}
+                          title={day}
+                        >
+                          {WEEKDAYS_SHORT[idx]}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <span className="text-[10px] text-slate-400 mt-1 block">
+                    วันเรียน: {newWeeklyScheduleDays.join(", ")}
+                  </span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2">
@@ -484,20 +535,38 @@ export default function ClassroomsPage() {
                   </div>
 
                   <div>
-                    <label className="text-[10px] uppercase font-bold text-slate-400">ตารางสอนสัปดาห์</label>
-                    <select
-                      value={editSchedule}
-                      onChange={(e) => setEditSchedule(e.target.value)}
-                      className="w-full mt-1.5 px-4 py-2 rounded-xl bg-slate-50 border border-slate-200 focus:border-primary-500 outline-none text-sm text-slate-700 font-semibold glow-input"
-                    >
-                      <option value="ทุกวันจันทร์">ทุกวันจันทร์</option>
-                      <option value="ทุกวันอังคาร">ทุกวันอังคาร</option>
-                      <option value="ทุกวันพุธ">ทุกวันพุธ</option>
-                      <option value="ทุกวันพฤหัสบดี">ทุกวันพฤหัสบดี</option>
-                      <option value="ทุกวันศุกร์">ทุกวันศุกร์</option>
-                      <option value="ทุกวันเสาร์">ทุกวันเสาร์</option>
-                      <option value="ทุกวันอาทิตย์">ทุกวันอาทิตย์</option>
-                    </select>
+                    <label className="text-[10px] uppercase font-bold text-slate-400">วันเรียนในสัปดาห์ (เลือกได้หลายวัน)</label>
+                    <div className="flex flex-wrap gap-1.5 mt-1.5">
+                      {WEEKDAYS.map((day, idx) => {
+                        const isSelected = editScheduleDays.includes(day);
+                        return (
+                          <button
+                            key={day}
+                            type="button"
+                            onClick={() => {
+                              if (isSelected) {
+                                if (editScheduleDays.length > 1) {
+                                  setEditScheduleDays(editScheduleDays.filter((d) => d !== day));
+                                }
+                              } else {
+                                setEditScheduleDays([...editScheduleDays, day]);
+                              }
+                            }}
+                            className={`w-8 h-8 flex items-center justify-center rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                              isSelected
+                                ? "bg-primary-600 border-primary-600 text-white shadow-sm"
+                                : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100"
+                            }`}
+                            title={day}
+                          >
+                            {WEEKDAYS_SHORT[idx]}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <span className="text-[10px] text-slate-400 mt-1 block">
+                      วันเรียน: {editScheduleDays.join(", ")}
+                    </span>
                   </div>
 
                   <div className="grid grid-cols-2 gap-2">

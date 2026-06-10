@@ -109,6 +109,7 @@ export default function ReportsPage() {
       {
         ...currentClassroom.behavior_config,
         totalWeeks: currentClassroom.total_weeks,
+        weeklySchedule: currentClassroom.weekly_schedule,
       }
     );
 

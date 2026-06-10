@@ -36,8 +36,44 @@ export function parseThaiWeekday(scheduleDay: string): number {
 }
 
 /**
- * Generates weekly session dates based on start date, weekly schedule day, and total weeks.
- * Spaces subsequent dates by 7 days.
+ * Parses a Thai schedule string containing one or more weekdays (separated by commas, spaces, or "และ")
+ * and returns a sorted array of unique weekday indexes (0 = Sunday, 1 = Monday, etc.).
+ */
+export function parseMultipleThaiWeekdays(scheduleStr: string): number[] {
+  if (!scheduleStr) return [1]; // Default to Monday
+  
+  // Normalize and split by common delimiters: comma, space, slash, backslash, or the word "และ"
+  const parts = scheduleStr.split(/[,，\/\\|และ\s]+/);
+  const indexes: number[] = [];
+  
+  for (const part of parts) {
+    const trimmed = part.trim();
+    if (!trimmed) continue;
+    
+    // Find matching weekday in THAI_WEEKDAY_MAP
+    let found = false;
+    for (const key in THAI_WEEKDAY_MAP) {
+      if (trimmed.includes(key)) {
+        indexes.push(THAI_WEEKDAY_MAP[key]);
+        found = true;
+        break;
+      }
+    }
+  }
+  
+  if (indexes.length === 0) {
+    // If no match was found, fall back to parsing the whole string as a single day
+    return [parseThaiWeekday(scheduleStr)];
+  }
+  
+  // Return unique, sorted indices
+  return Array.from(new Set(indexes)).sort((a, b) => a - b);
+}
+
+/**
+ * Generates weekly session dates based on start date, weekly schedule (can contain multiple days), and total weeks.
+ * For each calendar week (up to totalWeeks), generates a date for each selected weekday.
+ * Dates are returned in chronological order and filtered to be on or after the start date.
  */
 export function generateSessionDates(
   startDateStr: string,
@@ -46,29 +82,36 @@ export function generateSessionDates(
 ): string[] {
   if (!startDateStr) return [];
   
-  const targetDayIdx = parseThaiWeekday(scheduleDay);
   const start = new Date(startDateStr);
   if (isNaN(start.getTime())) return [];
-
-  // Find the first matching day index on or after the start date
-  const resultDates: string[] = [];
-  const current = new Date(start);
   
-  // Find first day matching the schedule weekday
-  let diff = targetDayIdx - current.getDay();
-  if (diff < 0) {
-    diff += 7; // Go to next week
-  }
-  current.setDate(current.getDate() + diff);
-
-  // Generate totalWeeks dates spaced by 7 days
+  const targetDayIdxs = parseMultipleThaiWeekdays(scheduleDay);
+  const resultDates: string[] = [];
+  
+  // Find the Sunday of the week containing the start date
+  const sundayOfStartWeek = new Date(start);
+  const startDayOfWeek = start.getDay(); // 0 = Sunday, 1 = Monday, ...
+  sundayOfStartWeek.setDate(start.getDate() - startDayOfWeek);
+  
+  // Generate dates for each week and each target day index
   for (let i = 0; i < totalWeeks; i++) {
-    const dateStr = current.toISOString().split("T")[0];
-    resultDates.push(dateStr);
-    current.setDate(current.getDate() + 7);
+    const weekBase = new Date(sundayOfStartWeek);
+    weekBase.setDate(sundayOfStartWeek.getDate() + (i * 7));
+    
+    for (const dayIdx of targetDayIdxs) {
+      const sessionDate = new Date(weekBase);
+      sessionDate.setDate(weekBase.getDate() + dayIdx);
+      
+      // Keep only dates on or after the start date
+      if (sessionDate >= start) {
+        const dateStr = sessionDate.toISOString().split("T")[0];
+        resultDates.push(dateStr);
+      }
+    }
   }
-
-  return resultDates;
+  
+  // In case of multiple days, sort chronologically and remove duplicates
+  return Array.from(new Set(resultDates)).sort();
 }
 
 export type AttendanceStatus = "present" | "late" | "sick" | "absent";
@@ -203,8 +246,14 @@ export function calculateFinalGrade(
     latesPerAbsence?: number;
     scoreCalculationMethod?: "active_rescaling" | "deductive";
     totalWeeks?: number;
+    weeklySchedule?: string;
   }
 ) {
+  const weeklySchedule = behaviorConfig?.weeklySchedule;
+  const daysPerWeek = weeklySchedule ? parseMultipleThaiWeekdays(weeklySchedule).length : 1;
+  const totalWeeks = behaviorConfig?.totalWeeks ?? 18;
+  const totalSessions = totalWeeks * daysPerWeek;
+
   // Map flat weights & modes to component config objects
   const components: { [name: string]: ComponentConfig } = {};
   for (const key in weights) {
@@ -254,7 +303,7 @@ export function calculateFinalGrade(
 
     if (useAutoGrading) {
       // Scale by attendance percentage and behavioral score
-      const attPercent = calculateAttendancePercentage(attendanceRecords, behaviorConfig?.latesPerAbsence ?? 3, behaviorConfig?.totalWeeks);
+      const attPercent = calculateAttendancePercentage(attendanceRecords, behaviorConfig?.latesPerAbsence ?? 3, totalSessions);
       // Behavior is 50% and Attendance is 50% of this component
       const componentScore = (attPercent + behaviorScore100) / 2; // 0-100%
       componentScores[compName] = componentScore;
@@ -364,7 +413,7 @@ export function calculateFinalGrade(
   const lpa = behaviorConfig?.latesPerAbsence ?? 3;
   const maxAbsAllowed = behaviorConfig?.maxAbsencesAllowed ?? 4;
 
-  const attRate = calculateAttendancePercentage(attendanceRecords, lpa, behaviorConfig?.totalWeeks);
+  const attRate = calculateAttendancePercentage(attendanceRecords, lpa, totalSessions);
   
   // Calculate total absences count (real absences + converted lates)
   const realAbsences = attendanceRecords.filter((a) => a.status === "absent").length;

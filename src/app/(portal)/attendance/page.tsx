@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useClassroom } from "@/context/ClassroomContext";
-import { generateSessionDates, AttendanceStatus } from "@/utils/mathUtils";
+import { generateSessionDates, AttendanceStatus, parseMultipleThaiWeekdays } from "@/utils/mathUtils";
 import {
   CalendarCheck,
   Check,
@@ -23,6 +23,19 @@ export default function AttendancePage() {
     attendance,
     saveAttendance
   } = useClassroom();
+
+  const getWeekNumAndDayLabel = (dateStr: string, idx: number) => {
+    if (!currentClassroom) return "";
+    const targetWeekdays = parseMultipleThaiWeekdays(currentClassroom.weekly_schedule);
+    const numDaysPerWeek = targetWeekdays.length > 0 ? targetWeekdays.length : 1;
+    const weekNum = Math.floor(idx / numDaysPerWeek) + 1;
+    
+    const dayNames = ["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์"];
+    const d = new Date(dateStr);
+    const dayName = dayNames[d.getDay()];
+    
+    return `สัปดาห์ที่ ${weekNum} (${dayName})`;
+  };
 
   const [sessionDates, setSessionDates] = useState<string[]>([]);
   const [selectedDate, setSelectedDate] = useState<string>("");
@@ -229,7 +242,7 @@ export default function AttendancePage() {
                     const logged = isDateLogged(date);
                     return (
                       <option key={date} value={date}>
-                        สัปดาห์ที่ {idx + 1}: {formatThaiDate(date)} {logged ? "✓" : ""}
+                        {getWeekNumAndDayLabel(date, idx)}: {formatThaiDate(date)} {logged ? "✓" : ""}
                       </option>
                     );
                   })}

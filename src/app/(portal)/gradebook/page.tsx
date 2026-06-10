@@ -331,6 +331,7 @@ export default function GradebookPage() {
         {
           ...currentClassroom.behavior_config,
           totalWeeks: currentClassroom.total_weeks,
+          weeklySchedule: currentClassroom.weekly_schedule,
         }
       );
 
@@ -462,6 +463,7 @@ export default function GradebookPage() {
         {
           ...currentClassroom.behavior_config,
           totalWeeks: currentClassroom.total_weeks,
+          weeklySchedule: currentClassroom.weekly_schedule,
         }
       );
       if (gradeResult.risk === "red") redCount++;
@@ -515,6 +517,7 @@ export default function GradebookPage() {
         {
           ...currentClassroom.behavior_config,
           totalWeeks: currentClassroom.total_weeks,
+          weeklySchedule: currentClassroom.weekly_schedule,
         }
       );
       sum += result.finalPercentage;
@@ -750,6 +753,7 @@ export default function GradebookPage() {
                     {
                       ...currentClassroom.behavior_config,
                       totalWeeks: currentClassroom.total_weeks,
+                      weeklySchedule: currentClassroom.weekly_schedule,
                     }
                   );
 
