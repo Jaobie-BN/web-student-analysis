@@ -20,7 +20,7 @@ export const metadata: Metadata = {
   title: "Student Analytics & Classroom Management System",
   description: "A premium classroom dashboard and analytic suite for teachers",
   icons: {
-    icon: "/favicon.png",
+    icon: "/favicon.svg",
   },
 };
 
