@@ -64,28 +64,34 @@ export async function POST(req: NextRequest) {
     });
 
     const prompt = `
-      You are an expert school counselor and educational analyst in Thailand.
-      Analyze the following student data and generate a detailed report in THAI language.
+      คุณคือผู้เชี่ยวชาญด้านจิตวิทยาการศึกษาและที่ปรึกษาแนะแนวในโรงเรียนไทย
+      วิเคราะห์ข้อมูลของนักเรียนและตอบกลับเป็นภาษาไทยที่สุภาพ เป็นทางการ และสร้างสรรค์ (จิตวิทยาเชิงบวก)
       
-      Student Profile:
-      - Name: ${studentName} (Code: ${studentCode})
-      - Attendance Rate: ${attendanceRate}%
-      - Behavioral Score: ${behaviorScore}/100
-      - Overall Score Weighted Percentage: ${finalPercentage}%
-      - Projected Grade: ${grade}
-      - Risk Level: ${risk} (green = normal, yellow = warning, red = critical risk)
-      - Teacher Notes: ${notes || "None"}
-      - Detailed component scores (out of 100% per component): ${JSON.stringify(componentScores)}
+      ข้อมูลนักเรียน:
+      - ชื่อ: ${studentName} (รหัส: ${studentCode})
+      - อัตราเข้าเรียน: ${attendanceRate}%
+      - คะแนนจิตพิสัย: ${behaviorScore}/100
+      - คะแนนรวมสะสมคิดเป็นเปอร์เซ็นต์: ${finalPercentage}%
+      - เกรดคาดการณ์: ${grade}
+      - ระดับความเสี่ยง: ${risk} (green = ปกติ, yellow = เฝ้าระวัง, red = เสี่ยงสูง)
+      - บันทึกเพิ่มเติมจากครู: ${notes || "ไม่มี"}
+      - รายละเอียดคะแนนแต่ละส่วน: ${JSON.stringify(componentScores)}
 
-      Generate a JSON response with exactly four keys:
+      ข้อกำหนดในการวิเคราะห์:
+      1. ในช่อง "summary": สรุปภาพรวมพฤติกรรมและการเรียนในเชิงสร้างสรรค์
+      2. ในช่อง "strengths": ชี้จุดเด่นของนักเรียนทั้งในด้านการเรียนและพฤติกรรม
+      3. ในช่อง "weaknesses": หลีกเลี่ยงคำเชิงลบ ให้ใช้หัวข้อเกี่ยวกับ "ประเด็นที่ต้องสนับสนุนหรือพัฒนาเพิ่มเติม"
+      4. ในช่อง "recommendations": ให้ข้อเสนอแนะ 3 ด้านแยกกันชัดเจน (คำแนะนำสำหรับครูในชั้นเรียน, คำแนะนำสำหรับผู้ปกครองเพื่อดูแลที่บ้าน, และแนวทางดูแลหรือสอนเสริมพิเศษ)
+      
+      ตอบกลับในรูปแบบ JSON เปล่าๆ เท่านั้นตามโครงสร้างนี้:
       {
-        "summary": "detailed thai paragraph summarizing student overall behavior, attendance and academic status",
-        "strengths": "thai bullet points explaining strengths and good behaviors",
-        "weaknesses": "thai bullet points explaining weaknesses and areas for improvement",
-        "recommendations": "thai numbered list explaining suggestions for teacher and parents to support the student"
+        "summary": "สรุปภาพรวมในรูปแบบย่อหน้าภาษาไทย",
+        "strengths": "จุดเด่นในรูปแบบลิสต์ภาษาไทย",
+        "weaknesses": "ประเด็นที่ต้องสนับสนุนเพิ่มเติมในรูปแบบลิสต์ภาษาไทย",
+        "recommendations": "คำแนะนำการส่งเสริมในรูปแบบลิสต์รายการ"
       }
       
-      Return ONLY the raw JSON string matching this schema. No markdown wrapping.
+      ส่งคืนเฉพาะข้อความ JSON ดิบที่ตรงตามโครงสร้างนี้เท่านั้น ห้ามใส่เครื่องหมายคำพูด Markdown (เช่น \`\`\`json) ครอบ
     `;
 
     // --- LIVE GEMINI 2.5 FLASH CALL WITH RETRY ---
