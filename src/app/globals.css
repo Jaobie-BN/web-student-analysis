@@ -1,0 +1,309 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=Sarabun:wght@300;400;500;600;700;800;900&family=Outfit:wght@300;400;500;600;700;800;900&family=Prompt:wght@300;400;500;600;700;800;900&display=swap');
+@import "tailwindcss";
+
+@theme inline {
+  --color-primary-50: var(--primary-50);
+  --color-primary-100: var(--primary-100);
+  --color-primary-200: var(--primary-200);
+  --color-primary-300: var(--primary-300);
+  --color-primary-400: var(--primary-400);
+  --color-primary-500: var(--primary-500);
+  --color-primary-600: var(--primary-600);
+  --color-primary-700: var(--primary-700);
+  --color-primary-800: var(--primary-800);
+  --color-primary-900: var(--primary-900);
+  
+  --color-card-bg: var(--card-bg);
+  --color-card-border: var(--card-border);
+  --color-sidebar-bg: var(--sidebar-bg);
+  
+  --color-emerald-500: #10b981;
+  --color-amber-500: #f59e0b;
+  --color-rose-500: #f43f5e;
+
+  /* Stitch UI Design System Colors */
+  --color-primary: #003670;
+  --color-primary-container: #004d99;
+  --color-on-primary-container: #9ec1ff;
+  --color-on-primary: #ffffff;
+  --color-secondary: #006591;
+  --color-secondary-container: #39b8fd;
+  --color-on-secondary: #ffffff;
+  --color-surface: #ffffff;
+  --color-surface-bright: #f7f9fb;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #f2f4f6;
+  --color-surface-container: #eceef0;
+  --color-surface-container-high: #e6e8ea;
+  --color-surface-container-highest: #e0e3e5;
+  --color-surface-dim: #d8dadc;
+  --color-on-surface: #191c1e;
+  --color-on-surface-variant: #424751;
+  --color-outline: #727782;
+  --color-outline-variant: #c2c6d3;
+  --color-warning-amber: #F59E0B;
+  --color-success-emerald: #10B981;
+  --color-critical-rose: #EF4444;
+  --color-sky-blue: #0EA5E9;
+  --color-slate-900: #0F172A;
+  --color-slate-200: #E2E8F0;
+
+  /* Stitch Typography & Font Families */
+  --font-headline-lg-mobile: "Plus Jakarta Sans", "Sarabun", sans-serif;
+  --font-label-md: "Plus Jakarta Sans", "Sarabun", sans-serif;
+  --font-headline-sm: "Plus Jakarta Sans", "Sarabun", sans-serif;
+  --font-headline-md: "Plus Jakarta Sans", "Sarabun", sans-serif;
+  --font-body-lg: "Sarabun", sans-serif;
+  --font-code: "courierPrime", monospace;
+  --font-body-md: "Sarabun", sans-serif;
+  --font-headline-lg: "Plus Jakarta Sans", "Sarabun", sans-serif;
+  --font-label-sm: "Plus Jakarta Sans", "Sarabun", sans-serif;
+  --font-body-sm: "Sarabun", sans-serif;
+
+  /* Stitch Font Sizes */
+  --text-headline-lg: 32px;
+  --text-headline-lg-mobile: 24px;
+  --text-headline-md: 24px;
+  --text-headline-sm: 20px;
+  --text-body-lg: 18px;
+  --text-body-md: 16px;
+  --text-body-sm: 14px;
+  --text-label-md: 14px;
+  --text-label-sm: 12px;
+  --text-code: 14px;
+
+  /* Stitch Custom Spacings */
+  --spacing-container-max-width: 1440px;
+  --spacing-stack-gap-lg: 24px;
+  --spacing-margin-mobile: 16px;
+  --spacing-stack-gap-sm: 8px;
+  --spacing-margin-tablet: 24px;
+  --spacing-sidebar-width: 260px;
+  --spacing-margin-desktop: 32px;
+  --spacing-gutter: 24px;
+  --spacing-stack-gap-md: 16px;
+  --spacing-card-padding: 24px;
+}
+
+:root {
+  /* LIGHT MODE - Stitch UI Design System (Royal Blue & Sky Blue) */
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  
+  --primary-50: #f0f7ff;
+  --primary-100: #e0effe;
+  --primary-200: #bae0fd;
+  --primary-300: #7cc7fc;
+  --primary-400: #38a9f9;
+  --primary-500: #0ea5e9; /* Sky Blue */
+  --primary-600: #004d99; /* Royal Blue */
+  --primary-700: #003d7a;
+  --primary-800: #002d5c;
+  --primary-900: #001e3d;
+
+  --card-bg: rgba(255, 255, 255, 0.85);
+  --card-border: rgba(226, 232, 240, 0.9);
+  --sidebar-bg: #ffffff;
+  
+  --glass-shadow: 0 4px 20px -2px rgba(0, 77, 153, 0.04), 0 2px 4px -2px rgba(0, 77, 153, 0.04);
+}
+
+/* DARK MODE CLASS (ScholarFlow Premium Design defaults) */
+.dark, :root[class~="dark"] {
+  --background: #090d16;
+  --foreground: #f1f5f9;
+  
+  --primary-50: #120e2e;
+  --primary-100: #21154a;
+  --primary-200: #3c248f;
+  --primary-300: #5833c9;
+  --primary-400: #6d3ef2;
+  --primary-500: #7c3aed;
+  --primary-600: #8b5cf6;
+  --primary-700: #a78bfa;
+  --primary-800: #c084fc;
+  --primary-900: #ede9fe;
+
+  --card-bg: rgba(15, 19, 28, 0.65);
+  --card-border: rgba(255, 255, 255, 0.07);
+  --sidebar-bg: #0b0e17;
+  
+  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.45);
+}
+
+*, ::before, ::after {
+  box-sizing: border-box;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: 'Prompt', 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  overflow-x: hidden;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 77, 153, 0.2);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 77, 153, 0.4);
+}
+
+/* Glassmorphism Classes */
+.glass-panel {
+  background: var(--card-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--card-border);
+  box-shadow: var(--glass-shadow);
+  /* Top lighting edge highlight */
+  background-image: linear-gradient(to bottom, rgba(255, 255, 255, 0.4), transparent);
+}
+
+.glass-panel-hover {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.glass-panel-hover:hover {
+  transform: translateY(-4px) scale(1.01);
+  border-color: rgba(0, 77, 153, 0.3);
+  box-shadow: 0 12px 30px 0 rgba(0, 77, 153, 0.08);
+}
+
+/* Glowing Input Focus states */
+.glow-input {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glow-input:focus {
+  border-color: rgba(0, 77, 153, 0.5);
+  box-shadow: 0 0 10px 2px rgba(0, 77, 153, 0.1);
+  background-color: var(--background);
+}
+
+/* Sidebar behavior animation */
+.sidebar-transition {
+  transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1), min-width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Shimmer animation */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.03) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* ----------------------------------------------------
+   PRINT STYLES (@media print)
+   Ensure a gorgeous, borderless, professionally formatted page (ปพ.5 style)
+   ---------------------------------------------------- */
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-size: 11pt !important;
+    font-family: 'Prompt', 'Sarabun', 'TH Sarabun PSK', sans-serif !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Hide navigation, filters, sidebar, and export buttons */
+  nav, 
+  aside,
+  header,
+  .no-print,
+  button,
+  .btn,
+  .filter-bar,
+  .theme-toggle {
+    display: none !important;
+  }
+
+  /* Make containers full width and remove borders/shadows */
+  main,
+  .main-content,
+  .print-container {
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    border: none !important;
+  }
+
+  /* Styling tables for print */
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    page-break-inside: auto !important;
+  }
+
+  tr {
+    page-break-inside: avoid !important;
+    page-break-after: auto !important;
+  }
+
+  thead {
+    display: table-header-group !important;
+  }
+
+  th, td {
+    border: 1px solid #000000 !important;
+    padding: 6px 4px !important;
+    color: #000000 !important;
+    font-size: 9pt !important;
+    text-align: center !important;
+  }
+
+  td.text-left, th.text-left {
+    text-align: left !important;
+  }
+
+  /* Page Break utilities */
+  .page-break {
+    page-break-before: always !important;
+  }
+
+  .print-title {
+    text-align: center !important;
+    margin-bottom: 20px !important;
+    font-size: 16pt !important;
+    font-weight: bold !important;
+  }
+  
+  .print-subtitle {
+    text-align: center !important;
+    margin-bottom: 15px !important;
+    font-size: 12pt !important;
+  }
+
+  .print-flex-row {
+    display: flex !important;
+    justify-content: space-between !important;
+    margin-bottom: 10px !important;
+  }
+
+  /* Force background colors or remove them for clean print */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}

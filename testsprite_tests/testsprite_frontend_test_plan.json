@@ -1,0 +1,1459 @@
+[
+  {
+    "id": "TC001",
+    "title": "Sign in and reach the dashboard",
+    "description": "This verifies that a teacher can sign in from the landing page and land on the dashboard.",
+    "category": "Teacher Login & Demo Mode",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the dashboard is displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC002",
+    "title": "Reach the dashboard from the landing page",
+    "description": "This verifies that a teacher can sign in or enter demo mode and arrive at the dashboard with classroom data available.",
+    "category": "Dashboard Analytics & Risk Overview",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Enter the teacher login credentials"
+      },
+      {
+        "type": "action",
+        "description": "Submit the sign-in form"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the dashboard is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify classroom analytics are displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC003",
+    "title": "Enter the portal with demo data",
+    "description": "This verifies that a user can enter Demo Mode from the landing page and reach the dashboard with seeded classroom data.",
+    "category": "Teacher Login & Demo Mode",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Choose Demo Mode login"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the dashboard is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify seeded classroom data is displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC004",
+    "title": "View dashboard analytics and risk flags after data entry",
+    "description": "This verifies that the dashboard shows updated attendance, grade analytics, and risk indicators after classroom data has been recorded.",
+    "category": "Teacher Dashboard Overview",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /dashboard"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify class analytics are displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify student risk indicators are displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC005",
+    "title": "Record attendance for a session date",
+    "description": "This verifies that a teacher can select a date, set attendance for students, and save the session record.",
+    "category": "Attendance Tracking",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Enter the teacher login credentials"
+      },
+      {
+        "type": "action",
+        "description": "Submit the sign-in form"
+      },
+      {
+        "type": "action",
+        "description": "Click the link to open attendance tracking"
+      },
+      {
+        "type": "action",
+        "description": "Select a session date"
+      },
+      {
+        "type": "action",
+        "description": "Set attendance status for each student"
+      },
+      {
+        "type": "action",
+        "description": "Save attendance"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the session log is updated"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the recorded attendance appears for the selected date"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC006",
+    "title": "Enter scores and recalculate totals",
+    "description": "This verifies that a teacher can update student scores, save them, and see totals recalculate in the gradebook.",
+    "category": "Gradebook & Scores Input",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Enter the teacher login credentials"
+      },
+      {
+        "type": "action",
+        "description": "Submit the sign-in form"
+      },
+      {
+        "type": "action",
+        "description": "Click the link to open the gradebook"
+      },
+      {
+        "type": "action",
+        "description": "Select a student score cell"
+      },
+      {
+        "type": "action",
+        "description": "Enter a valid score"
+      },
+      {
+        "type": "action",
+        "description": "Save scores"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the updated score is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the grade totals recalculate"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC007",
+    "title": "Enter assignment scores and recalculate grades",
+    "description": "This verifies that a teacher can create an assignment, enter student scores, and see totals and component grades update.",
+    "category": "Gradebook",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /gradebook"
+      },
+      {
+        "type": "action",
+        "description": "Create a new assignment"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the assignment details"
+      },
+      {
+        "type": "action",
+        "description": "Enter a score for a student"
+      },
+      {
+        "type": "action",
+        "description": "Save the score entry"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the updated grade totals are displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the recalculated component grades are displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC008",
+    "title": "Review analytics and risk overview",
+    "description": "This verifies that the dashboard shows attendance, grade, and risk information needed to monitor a class.",
+    "category": "Dashboard Analytics & Risk Overview",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Enter the teacher login credentials"
+      },
+      {
+        "type": "action",
+        "description": "Submit the sign-in form"
+      },
+      {
+        "type": "action",
+        "description": "Click the link to open the dashboard"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify attendance analytics are displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify risk indicators and classroom alerts are displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC009",
+    "title": "Save an all-present attendance session",
+    "description": "This verifies that a teacher can record a full present session and see it saved for the chosen date.",
+    "category": "Attendance Tracking",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Enter the teacher login credentials"
+      },
+      {
+        "type": "action",
+        "description": "Submit the sign-in form"
+      },
+      {
+        "type": "action",
+        "description": "Click the link to open attendance tracking"
+      },
+      {
+        "type": "action",
+        "description": "Select a session date"
+      },
+      {
+        "type": "action",
+        "description": "Mark all students as present"
+      },
+      {
+        "type": "action",
+        "description": "Save attendance"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the class is recorded for the session"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the session log shows the saved attendance entry"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC010",
+    "title": "Create a classroom with grading settings",
+    "description": "This verifies that a teacher can create a classroom and save semester, grading, threshold, and behavior settings.",
+    "category": "Classroom & Grade Configuration",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /classes"
+      },
+      {
+        "type": "action",
+        "description": "Add a new classroom"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the classroom name field with a unique classroom name"
+      },
+      {
+        "type": "action",
+        "description": "Set the semester length"
+      },
+      {
+        "type": "action",
+        "description": "Adjust the grading weights and threshold settings"
+      },
+      {
+        "type": "action",
+        "description": "Save the classroom settings"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the classroom is displayed in the classroom list"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the grading configuration is displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC011",
+    "title": "Create an assignment in the gradebook",
+    "description": "This verifies that a teacher can add a new assignment with its grading details and see it added to the gradebook.",
+    "category": "Gradebook & Scores Input",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Enter the teacher login credentials"
+      },
+      {
+        "type": "action",
+        "description": "Submit the sign-in form"
+      },
+      {
+        "type": "action",
+        "description": "Click the link to open the gradebook"
+      },
+      {
+        "type": "action",
+        "description": "Create a new assignment"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the assignment appears in the gradebook"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a new gradebook column is displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC012",
+    "title": "Add a student to the roster",
+    "description": "This verifies that a teacher can add a new student with identifying details and see the roster update.",
+    "category": "Student Roster Management with Excel Import/Export",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /students"
+      },
+      {
+        "type": "action",
+        "description": "Add a new student"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the student code field with a unique student code"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the student prefix field with a prefix"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the student name field with a unique student name"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the notes field with student notes"
+      },
+      {
+        "type": "action",
+        "description": "Save the student"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the new student is displayed in the roster"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC013",
+    "title": "Create and configure a classroom",
+    "description": "This verifies that a teacher can create a classroom and set grading weights and thresholds needed for later grading workflows.",
+    "category": "Create/Edit Classroom Settings",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Enter the teacher login credentials"
+      },
+      {
+        "type": "action",
+        "description": "Submit the sign-in form"
+      },
+      {
+        "type": "action",
+        "description": "Click the link to open classroom settings"
+      },
+      {
+        "type": "action",
+        "description": "Create a new classroom"
+      },
+      {
+        "type": "action",
+        "description": "Configure grading weights and thresholds"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the classroom is created"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the grading configuration is saved"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC014",
+    "title": "Import a roster from Excel",
+    "description": "This verifies that a teacher can import student roster data from an Excel file and see the roster populated.",
+    "category": "Student Roster Management with Excel Import/Export",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /students"
+      },
+      {
+        "type": "action",
+        "description": "Import a roster from Excel"
+      },
+      {
+        "type": "action",
+        "description": "Select a valid roster file"
+      },
+      {
+        "type": "action",
+        "description": "Review the imported entries"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the roster is populated with imported students"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC015",
+    "title": "Update classroom grading settings",
+    "description": "This verifies that a teacher can edit an existing classroom's semester, grading, threshold, and behavior settings and keep the changes.",
+    "category": "Classroom & Grade Configuration",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /classes"
+      },
+      {
+        "type": "action",
+        "description": "Select an existing classroom"
+      },
+      {
+        "type": "action",
+        "description": "Change the semester length"
+      },
+      {
+        "type": "action",
+        "description": "Update the grading weights and threshold settings"
+      },
+      {
+        "type": "action",
+        "description": "Save the classroom settings"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the updated classroom settings are displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC016",
+    "title": "Delete a student from the roster",
+    "description": "This verifies that a teacher can remove a student from the roster and the student no longer appears.",
+    "category": "Student Roster Management with Excel Import/Export",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /students"
+      },
+      {
+        "type": "action",
+        "description": "Select an existing student"
+      },
+      {
+        "type": "action",
+        "description": "Delete the student"
+      },
+      {
+        "type": "action",
+        "description": "Confirm the removal"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the student is no longer displayed in the roster"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC017",
+    "title": "Edit a student in the roster",
+    "description": "This verifies that a teacher can update an existing student's details and see the changes in the roster.",
+    "category": "Student Roster Management with Excel Import/Export",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /students"
+      },
+      {
+        "type": "action",
+        "description": "Select an existing student"
+      },
+      {
+        "type": "action",
+        "description": "Update the student details"
+      },
+      {
+        "type": "action",
+        "description": "Save the student changes"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the updated student is displayed in the roster"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC018",
+    "title": "Review attendance history for a class session",
+    "description": "This verifies that a teacher can open attendance history and review saved session logs.",
+    "category": "Attendance",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /attendance"
+      },
+      {
+        "type": "action",
+        "description": "Open the session log view"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify saved attendance sessions are displayed"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC019",
+    "title": "Generate a report card or transcript and export it",
+    "description": "This verifies that a teacher can generate a report card or transcript and export it for sharing.",
+    "category": "Reports",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /reports"
+      },
+      {
+        "type": "action",
+        "description": "Generate a report card or transcript"
+      },
+      {
+        "type": "action",
+        "description": "Choose an export format"
+      },
+      {
+        "type": "action",
+        "description": "Export the report"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the generated report is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the export completes successfully"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC020",
+    "title": "Generate a report card for a student",
+    "description": "This verifies that a teacher can generate a report card from the reports area for external sharing.",
+    "category": "Report Generation & Export",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Enter the teacher login credentials"
+      },
+      {
+        "type": "action",
+        "description": "Submit the sign-in form"
+      },
+      {
+        "type": "action",
+        "description": "Click the link to open reports"
+      },
+      {
+        "type": "action",
+        "description": "Generate a report card"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the report card is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the generated report is available"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC021",
+    "title": "Generate a report card and export it as PDF",
+    "description": "A teacher can create a report card on the reports page and export it as a PDF for sharing.",
+    "category": "Reports Export",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /reports"
+      },
+      {
+        "type": "action",
+        "description": "Generate a report card"
+      },
+      {
+        "type": "action",
+        "description": "Export the report as PDF"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a report card is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify PDF export is available"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC022",
+    "title": "Generate a transcript and export it as Excel",
+    "description": "A teacher can create a transcript on the reports page and export it as an Excel file for external use.",
+    "category": "Reports Export",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /reports"
+      },
+      {
+        "type": "action",
+        "description": "Generate a transcript"
+      },
+      {
+        "type": "action",
+        "description": "Export the report as Excel"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a transcript is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify Excel export is available"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC023",
+    "title": "Generate and save an AI student summary",
+    "description": "This verifies that a teacher can select a student, generate an AI performance summary, review the analysis, and save it.",
+    "category": "AI Student Insights",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /ai-insights"
+      },
+      {
+        "type": "action",
+        "description": "Select a student"
+      },
+      {
+        "type": "action",
+        "description": "Generate an AI performance summary"
+      },
+      {
+        "type": "action",
+        "description": "Save the insight report"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the student strengths, weaknesses, and recommendations are displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the saved report is displayed"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC024",
+    "title": "View AI student insights",
+    "description": "This verifies that a teacher can select a student and generate a performance summary with strengths, weaknesses, and recommendations.",
+    "category": "AI Student Insights",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Enter the teacher login credentials"
+      },
+      {
+        "type": "action",
+        "description": "Submit the sign-in form"
+      },
+      {
+        "type": "action",
+        "description": "Click the link to open AI insights"
+      },
+      {
+        "type": "action",
+        "description": "Select a student"
+      },
+      {
+        "type": "action",
+        "description": "Generate the student performance summary"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the insight summary is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify strengths, weaknesses, and recommendations are displayed"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC025",
+    "title": "Generate an AI performance summary for a student",
+    "description": "A teacher can select a student and generate an AI insight summary with strengths, weaknesses, and recommendations.",
+    "category": "AI Student Insights",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /ai-insights"
+      },
+      {
+        "type": "action",
+        "description": "Choose a student from the available student list"
+      },
+      {
+        "type": "action",
+        "description": "Generate the AI analysis"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify an AI performance summary is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify strengths, weaknesses, and recommendations are displayed"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC026",
+    "title": "Export the roster to Excel",
+    "description": "This verifies that a teacher can export the current roster for offline use.",
+    "category": "Student Roster Management with Excel Import/Export",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /students"
+      },
+      {
+        "type": "action",
+        "description": "Export the roster to Excel"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the export action completes successfully"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC027",
+    "title": "Mark a submission as late while entering scores",
+    "description": "This verifies that a teacher can flag a submission as late and save the score entry with the late status preserved.",
+    "category": "Gradebook & Scores Input",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Enter the teacher login credentials"
+      },
+      {
+        "type": "action",
+        "description": "Submit the sign-in form"
+      },
+      {
+        "type": "action",
+        "description": "Click the link to open the gradebook"
+      },
+      {
+        "type": "action",
+        "description": "Select a student score cell"
+      },
+      {
+        "type": "action",
+        "description": "Enter a valid score"
+      },
+      {
+        "type": "action",
+        "description": "Mark the submission as late"
+      },
+      {
+        "type": "action",
+        "description": "Save scores"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the late submission status is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the saved score remains visible"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC028",
+    "title": "Switch between report card and transcript formats",
+    "description": "A teacher can change the report type and confirm the displayed report updates accordingly before exporting.",
+    "category": "Reports Export",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /reports"
+      },
+      {
+        "type": "action",
+        "description": "Generate a report card"
+      },
+      {
+        "type": "action",
+        "description": "Switch to transcript mode"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the displayed report changes to the transcript view"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify export options remain available"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC029",
+    "title": "Save a generated AI insight report",
+    "description": "A teacher can generate an AI insight and save the resulting report for later review.",
+    "category": "AI Student Insights",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /ai-insights"
+      },
+      {
+        "type": "action",
+        "description": "Choose a student from the available student list"
+      },
+      {
+        "type": "action",
+        "description": "Generate the AI analysis"
+      },
+      {
+        "type": "action",
+        "description": "Save the generated report"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the report is saved successfully"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the saved insight remains available in the interface"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC030",
+    "title": "Toggle a late submission for a score",
+    "description": "This verifies that a teacher can mark a score as late and see the gradebook reflect the late status.",
+    "category": "Gradebook",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /gradebook"
+      },
+      {
+        "type": "action",
+        "description": "Open an existing assignment score"
+      },
+      {
+        "type": "action",
+        "description": "Toggle the late submission status"
+      },
+      {
+        "type": "action",
+        "description": "Save the score entry"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the late status is displayed"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC031",
+    "title": "Export a transcript for external sharing",
+    "description": "This verifies that a teacher can generate a transcript and export it from the reports area.",
+    "category": "Report Generation & Export",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Enter the teacher login credentials"
+      },
+      {
+        "type": "action",
+        "description": "Submit the sign-in form"
+      },
+      {
+        "type": "action",
+        "description": "Click the link to open reports"
+      },
+      {
+        "type": "action",
+        "description": "Generate a transcript"
+      },
+      {
+        "type": "action",
+        "description": "Export the transcript"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the transcript export is available"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the generated transcript remains visible in the reports view"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC032",
+    "title": "Review AI insights for a different student",
+    "description": "A teacher can switch to another student and see that the displayed AI insight updates to match the newly selected student.",
+    "category": "AI Student Insights",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /ai-insights"
+      },
+      {
+        "type": "action",
+        "description": "Choose one student from the available student list"
+      },
+      {
+        "type": "action",
+        "description": "Generate the AI analysis"
+      },
+      {
+        "type": "action",
+        "description": "Choose a different student from the available student list"
+      },
+      {
+        "type": "action",
+        "description": "Generate the AI analysis"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the AI performance summary updates for the newly selected student"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC033",
+    "title": "Handle invalid classroom grading values",
+    "description": "This verifies that a teacher cannot save invalid semester, weight, or threshold values and sees validation feedback.",
+    "category": "Classroom & Grade Configuration",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /classes"
+      },
+      {
+        "type": "action",
+        "description": "Add a new classroom"
+      },
+      {
+        "type": "action",
+        "description": "Enter invalid grading values"
+      },
+      {
+        "type": "action",
+        "description": "Attempt to save the classroom settings"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify validation errors are displayed"
+      }
+    ],
+    "priority": "Low"
+  },
+  {
+    "id": "TC034",
+    "title": "Handle duplicate student codes",
+    "description": "This verifies that a teacher cannot save a student with a code that already exists and sees a duplicate validation message.",
+    "category": "Student Roster Management with Excel Import/Export",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /students"
+      },
+      {
+        "type": "action",
+        "description": "Add a new student"
+      },
+      {
+        "type": "action",
+        "description": "Fill in a student code that already exists"
+      },
+      {
+        "type": "action",
+        "description": "Attempt to save the student"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a duplicate student code validation error is displayed"
+      }
+    ],
+    "priority": "Low"
+  },
+  {
+    "id": "TC035",
+    "title": "Handle invalid attendance or grade entry values",
+    "description": "This verifies that a teacher sees validation feedback when entering an incomplete attendance date or an out-of-range score.",
+    "category": "Attendance",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /attendance"
+      },
+      {
+        "type": "action",
+        "description": "Attempt to save attendance without selecting a valid session date"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /gradebook"
+      },
+      {
+        "type": "action",
+        "description": "Enter an invalid score value"
+      },
+      {
+        "type": "action",
+        "description": "Attempt to save the score entry"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify validation errors are displayed for the invalid entry"
+      }
+    ],
+    "priority": "Low"
+  },
+  {
+    "id": "TC036",
+    "title": "View the AI insights empty state before generating analysis",
+    "description": "A teacher can open the AI insights page and see guidance or an empty state before any analysis is generated.",
+    "category": "AI Student Insights",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /ai-insights"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify an empty state or guidance message is displayed before analysis is generated"
+      }
+    ],
+    "priority": "Low"
+  },
+  {
+    "id": "TC037",
+    "title": "See the reports page empty state before generation",
+    "description": "A teacher can open the reports page and see that no report is shown until one is generated.",
+    "category": "Reports Export",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /reports"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify an empty state or prompt to generate a report is displayed"
+      }
+    ],
+    "priority": "Low"
+  }
+]
