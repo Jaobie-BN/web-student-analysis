@@ -17,7 +17,8 @@ import {
   BellRing,
   CheckCircle,
   Activity,
-  ChevronDown
+  ChevronDown,
+  Clock
 } from "lucide-react";
 import Link from "next/link";
 
@@ -143,6 +144,14 @@ export default function Dashboard() {
           (studentsWithGrades.reduce((sum, s) => sum + s.finalPercentage, 0) / totalStudents).toFixed(1)
         )
       : 0;
+
+  // Calculate On-Time Submission Rate for all students in this class
+  const studentIdsForOnTime = students.map((s) => s.id);
+  const classScores = scores.filter((sc) => studentIdsForOnTime.includes(sc.student_id));
+  const lateSubmissions = classScores.filter((sc) => sc.is_late).length;
+  const onTimeSubmissionRate = classScores.length > 0
+    ? Math.round(((classScores.length - lateSubmissions) / classScores.length) * 100)
+    : 100;
 
   // Risk groupings
   const redRiskCount = studentsWithGrades.filter((s) => s.risk === "red").length;
@@ -319,11 +328,14 @@ export default function Dashboard() {
       </div>
 
       {/* Stats Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-gutter mb-stack-gap-lg">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-gutter mb-stack-gap-lg">
         {/* Card 1: Total Students */}
-        <div className="bg-surface rounded-xl p-card-padding border border-slate-200 shadow-level-1 hover:shadow-level-2 transition-shadow">
+        <div 
+          onClick={() => setRiskFilter("all")} 
+          className="glass-panel glass-panel-hover rounded-xl p-card-padding cursor-pointer relative overflow-hidden"
+        >
           <div className="flex justify-between items-start mb-4">
-            <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center text-slate-600">
+            <div className="w-10 h-10 rounded-lg bg-slate-100/80 flex items-center justify-center text-slate-600">
               <Users className="w-5 h-5" />
             </div>
           </div>
@@ -331,14 +343,14 @@ export default function Dashboard() {
             <p className="text-label-md font-label-md text-outline mb-1">จำนวนนักเรียนทั้งหมด</p>
             <h4 className="text-headline-lg font-headline-lg text-slate-900">{totalStudents} คน</h4>
           </div>
-          <div className="mt-4 pt-4 border-t border-slate-100 flex items-center gap-2 text-success-emerald">
+          <div className="mt-4 pt-4 border-t border-slate-100/50 flex items-center gap-2 text-success-emerald">
             <CheckCircle className="w-4 h-4 shrink-0" />
-            <span className="text-label-sm font-label-sm text-slate-500">อัปโหลดข้อมูลรายชื่อเรียบร้อย</span>
+            <span className="text-label-sm font-label-sm text-slate-500">ทั้งหมด (คลิกเพื่อรีเซ็ตตัวกรอง)</span>
           </div>
         </div>
 
         {/* Card 2: Avg Attendance */}
-        <div className="bg-surface rounded-xl p-card-padding border border-slate-200 shadow-level-1 hover:shadow-level-2 transition-shadow">
+        <div className="glass-panel glass-panel-hover rounded-xl p-card-padding">
           <div className="flex justify-between items-start mb-4">
             <div className="w-10 h-10 rounded-lg bg-success-emerald/10 flex items-center justify-center text-success-emerald">
               <Calendar className="w-5 h-5" />
@@ -369,37 +381,58 @@ export default function Dashboard() {
             <p className="text-label-md font-label-md text-outline mb-1">อัตราเข้าเรียนเฉลี่ย</p>
             <h4 className="text-headline-lg font-headline-lg text-slate-900">{avgAttendance}%</h4>
           </div>
-          <div className="mt-4 pt-4 border-t border-slate-100">
-            <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+          <div className="mt-4 pt-4 border-t border-slate-100/50">
+            <div className="w-full bg-slate-100/50 h-1.5 rounded-full overflow-hidden">
               <div className="bg-success-emerald h-full rounded-full" style={{ width: `${avgAttendance}%` }}></div>
             </div>
           </div>
         </div>
 
-        {/* Card 3: Avg Final Score */}
-        <div className="bg-surface rounded-xl p-card-padding border border-slate-200 shadow-level-1 hover:shadow-level-2 transition-shadow">
+        {/* Card 3: On-Time Submission Rate */}
+        <div className="glass-panel glass-panel-hover rounded-xl p-card-padding">
+          <div className="flex justify-between items-start mb-4">
+            <div className="w-10 h-10 rounded-lg bg-warning-amber/10 flex items-center justify-center text-warning-amber">
+              <Clock className="w-5 h-5" />
+            </div>
+            <span className="flex items-center text-warning-amber text-[10px] font-bold bg-warning-amber/10 px-2 py-1 rounded-md">
+              ตรงเวลา
+            </span>
+          </div>
+          <div>
+            <p className="text-label-md font-label-md text-outline mb-1">ส่งงานตรงเวลาเฉลี่ย</p>
+            <h4 className="text-headline-lg font-headline-lg text-slate-900">{onTimeSubmissionRate}%</h4>
+          </div>
+          <div className="mt-4 pt-4 border-t border-slate-100/50">
+            <div className="w-full bg-slate-100/50 h-1.5 rounded-full overflow-hidden">
+              <div className="bg-warning-amber h-full rounded-full" style={{ width: `${onTimeSubmissionRate}%` }}></div>
+            </div>
+          </div>
+        </div>
+
+        {/* Card 4: Avg Final Score */}
+        <div className="glass-panel glass-panel-hover rounded-xl p-card-padding">
           <div className="flex justify-between items-start mb-4">
             <div className="w-10 h-10 rounded-lg bg-sky-blue/10 flex items-center justify-center text-sky-blue">
               <GraduationCap className="w-5 h-5" />
             </div>
             <span className="flex items-center text-sky-blue text-label-sm font-label-sm bg-sky-blue/10 px-2 py-1 rounded-md font-semibold">
               <Activity className="w-3.5 h-3.5 mr-1" />
-              คำนวณถ่วงน้ำหนัก
+              ถ่วงน้ำหนัก
             </span>
           </div>
           <div>
             <p className="text-label-md font-label-md text-outline mb-1">คะแนนเก็บเฉลี่ยห้อง</p>
             <h4 className="text-headline-lg font-headline-lg text-slate-900">{avgFinalScore}%</h4>
           </div>
-          <div className="mt-4 pt-4 border-t border-slate-100">
-            <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+          <div className="mt-4 pt-4 border-t border-slate-100/50">
+            <div className="w-full bg-slate-100/50 h-1.5 rounded-full overflow-hidden">
               <div className="bg-sky-blue h-full rounded-full" style={{ width: `${avgFinalScore}%` }}></div>
             </div>
           </div>
         </div>
 
-        {/* Card 4: Risks */}
-        <div className="bg-surface rounded-xl p-card-padding border border-slate-200 shadow-level-1 hover:shadow-level-2 transition-shadow border-l-4 border-l-critical-rose">
+        {/* Card 5: Risks */}
+        <div className="glass-panel glass-panel-hover rounded-xl p-card-padding border-l-4 border-l-critical-rose">
           <div className="flex justify-between items-start mb-4">
             <div className="w-10 h-10 rounded-lg bg-critical-rose/10 flex items-center justify-center text-critical-rose">
               <AlertTriangle className="w-5 h-5" />
@@ -409,9 +442,27 @@ export default function Dashboard() {
             <p className="text-label-md font-label-md text-outline mb-1">กลุ่มเฝ้าระวัง/เสี่ยง</p>
             <h4 className="text-headline-lg font-headline-lg text-critical-rose">{redRiskCount + yellowRiskCount} คน</h4>
           </div>
-          <div className="mt-4 pt-4 border-t border-slate-100 flex gap-2">
-            <span className="px-2 py-1 bg-critical-rose/10 text-critical-rose text-label-sm font-label-sm rounded-md font-bold">วิกฤต {redRiskCount}</span>
-            <span className="px-2 py-1 bg-warning-amber/10 text-warning-amber text-label-sm font-label-sm rounded-md font-bold">เฝ้าระวัง {yellowRiskCount}</span>
+          <div className="mt-4 pt-4 border-t border-slate-100/50 flex gap-2">
+            <button 
+              onClick={(e) => { e.stopPropagation(); setRiskFilter("red"); }} 
+              className={`px-2 py-1 text-[10px] rounded-md font-bold transition-all cursor-pointer ${
+                riskFilter === "red" 
+                  ? "bg-critical-rose text-white shadow-sm" 
+                  : "bg-critical-rose/10 text-critical-rose hover:bg-critical-rose/20"
+              }`}
+            >
+              วิกฤต {redRiskCount}
+            </button>
+            <button 
+              onClick={(e) => { e.stopPropagation(); setRiskFilter("yellow"); }} 
+              className={`px-2 py-1 text-[10px] rounded-md font-bold transition-all cursor-pointer ${
+                riskFilter === "yellow" 
+                  ? "bg-warning-amber text-white shadow-sm" 
+                  : "bg-warning-amber/10 text-warning-amber hover:bg-warning-amber/20"
+              }`}
+            >
+              เฝ้าระวัง {yellowRiskCount}
+            </button>
           </div>
         </div>
       </div>
@@ -420,8 +471,8 @@ export default function Dashboard() {
       {mounted && totalStudents > 0 && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-gutter mb-stack-gap-lg">
           {/* Grade distribution graph */}
-          <div className="lg:col-span-2 bg-surface rounded-xl p-card-padding border border-slate-200 shadow-level-1">
-            <div className="flex justify-between items-center mb-6 pb-4 border-b border-slate-100">
+          <div className="lg:col-span-2 glass-panel glass-panel-hover rounded-xl p-card-padding">
+            <div className="flex justify-between items-center mb-6 pb-4 border-b border-slate-100/50">
               <h3 className="text-headline-sm font-headline-sm text-slate-900">การกระจายผลสัมฤทธิ์ (กลางภาค)</h3>
               <Link href="/gradebook" className="text-sky-blue text-label-sm font-label-sm hover:underline">ดูรายละเอียด</Link>
             </div>
@@ -447,8 +498,8 @@ export default function Dashboard() {
           </div>
 
           {/* Risk Pie Chart */}
-          <div className="bg-surface rounded-xl p-card-padding border border-slate-200 shadow-level-1 flex flex-col justify-between">
-            <h3 className="text-headline-sm font-headline-sm text-slate-900 mb-6 pb-4 border-b border-slate-100">การประเมินอัตราเสี่ยงของห้อง</h3>
+          <div className="glass-panel glass-panel-hover rounded-xl p-card-padding flex flex-col justify-between">
+            <h3 className="text-headline-sm font-headline-sm text-slate-900 mb-6 pb-4 border-b border-slate-100/50">การประเมินอัตราเสี่ยงของห้อง</h3>
             <div className="h-40 flex items-center justify-center relative">
               {riskPieData.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%" minWidth={0}>
@@ -517,7 +568,7 @@ export default function Dashboard() {
 
       {/* Classroom Alerts List Widget (Shows up only if alerts exist) */}
       {alerts.length > 0 && (
-        <div className="bg-surface rounded-xl p-card-padding border border-slate-200 shadow-level-1 mb-stack-gap-lg">
+        <div className="glass-panel rounded-xl p-card-padding mb-stack-gap-lg">
           <h4 className="text-headline-sm font-headline-sm text-slate-900 mb-4 flex items-center gap-2">
             <BellRing className="w-5 h-5 text-rose-500 animate-bounce" />
             <span>รายการเตือนสติและพฤติกรรม (Classroom Alerts)</span>
@@ -530,10 +581,10 @@ export default function Dashboard() {
             {alerts.map((alert, idx) => (
               <div
                 key={`${alert.id}-${idx}`}
-                className={`p-3.5 rounded-lg border flex items-start gap-3 transition-all bg-surface hover:shadow-level-1 cursor-pointer ${
+                className={`p-3.5 rounded-lg border flex items-start gap-3 transition-all hover:shadow-level-1 cursor-pointer ${
                   alert.type === "critical"
-                    ? "border-critical-rose/30 bg-critical-rose/5"
-                    : "border-warning-amber/30 bg-warning-amber/5"
+                    ? "border-critical-rose/30 bg-critical-rose/5 hover:bg-critical-rose/10"
+                    : "border-warning-amber/30 bg-warning-amber/5 hover:bg-warning-amber/10"
                 }`}
               >
                 <div className="mt-0.5 shrink-0">
@@ -557,7 +608,7 @@ export default function Dashboard() {
 
       {/* Success state if no alerts are triggered */}
       {totalStudents > 0 && alerts.length === 0 && (
-        <div className="bg-surface rounded-xl p-5 border-success-emerald/20 bg-success-emerald/5 flex items-center gap-3 border shadow-sm">
+        <div className="glass-panel rounded-xl p-5 border-success-emerald/20 bg-success-emerald/5 flex items-center gap-3 mb-stack-gap-lg shadow-sm">
           <CheckCircle className="w-5 h-5 text-success-emerald" />
           <p className="text-xs text-slate-750 font-semibold leading-relaxed py-0.5">
             ยอดเยี่ยม! สภาพการเรียนและเข้าชั้นเรียนของนักเรียนทุกคนปกติเป็นระเบียบเรียบร้อย ไม่พบรายงานพฤติกรรมผิดปรกติ
@@ -566,8 +617,8 @@ export default function Dashboard() {
       )}
 
       {/* Roster list with details */}
-      <div className="bg-surface rounded-xl border border-slate-200 shadow-level-1 overflow-hidden">
-        <div className="p-card-padding border-b border-slate-100 flex flex-wrap items-center justify-between gap-4 bg-slate-50/50">
+      <div className="glass-panel rounded-xl overflow-hidden">
+        <div className="p-card-padding border-b border-slate-100/50 flex flex-wrap items-center justify-between gap-4 bg-slate-50/20">
           <h3 className="text-headline-sm font-headline-sm text-slate-900">รายชื่อนักเรียน</h3>
 
           <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">

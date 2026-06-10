@@ -133,6 +133,24 @@ export default function AIInsightsPage() {
 
   const selectedMetrics = selectedStudent ? getStudentMetrics(selectedStudent) : null;
 
+  // Calculate classroom averages for benchmarking
+  const classAvgAttendance = students.length > 0
+    ? Math.round(students.reduce((sum, s) => sum + getStudentMetrics(s).attendanceRate, 0) / students.length)
+    : 100;
+
+  const classAvgBehavior = students.length > 0
+    ? Math.round(students.reduce((sum, s) => sum + getStudentMetrics(s).behaviorScore, 0) / students.length)
+    : 100;
+
+  const classAvgPercentage = students.length > 0
+    ? Math.round(students.reduce((sum, s) => sum + getStudentMetrics(s).finalPercentage, 0) / students.length)
+    : 0;
+
+  const totalLateScoresCount = scores.filter((sc) => sc.is_late).length;
+  const classAvgLate = students.length > 0
+    ? parseFloat((totalLateScoresCount / students.length).toFixed(1))
+    : 0;
+
   const handleGenerate = async () => {
     if (!selectedStudent || !selectedMetrics) return;
 
@@ -375,7 +393,7 @@ export default function AIInsightsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         
         {/* Left Side: Student Roster Select Pane */}
-        <div className="glass-panel rounded-2xl border border-slate-200 shadow-level-1 overflow-hidden flex flex-col bg-surface-container-lowest no-print">
+        <div className="glass-panel rounded-2xl overflow-hidden flex flex-col no-print">
           <div className="p-4 border-b border-slate-200 bg-surface-bright flex-shrink-0">
             <h3 className="text-label-md font-label-md font-bold text-on-surface mb-3">รายชื่อนักเรียน</h3>
             <div className="relative">
@@ -448,7 +466,7 @@ export default function AIInsightsPage() {
               </div>
 
               {/* Student Overview Card */}
-              <div className="bg-surface-container-lowest rounded-2xl border border-slate-200 shadow-level-1 p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative overflow-hidden">
+              <div className="glass-panel rounded-2xl p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-primary/5 to-transparent rounded-bl-full pointer-events-none"></div>
                 
                 <div className="flex items-center gap-4 relative z-10">
@@ -495,20 +513,22 @@ export default function AIInsightsPage() {
                 </div>
               </div>
 
-              {/* Stats Grid Indicators */}
+              {/* Stats Grid Indicators with Classroom Benchmarks */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="bg-surface-bright rounded-xl p-3 border border-slate-100 flex flex-col items-center justify-center text-center">
-                  <span className="text-label-sm font-label-sm text-on-surface-variant mb-1">อัตราการเข้าเรียน</span>
-                  <span className="text-headline-sm font-headline-sm font-bold text-on-surface">{selectedMetrics.attendanceRate}%</span>
+                <div className="glass-panel glass-panel-hover rounded-xl p-4 flex flex-col items-center justify-center text-center">
+                  <span className="text-label-sm font-label-sm text-outline mb-1 font-semibold">อัตราการเข้าเรียน</span>
+                  <span className="text-headline-sm font-headline-sm font-bold text-slate-900">{selectedMetrics.attendanceRate}%</span>
+                  <span className="text-[10px] text-outline mt-1 block">เฉลี่ยทั้งห้อง: {classAvgAttendance}%</span>
                 </div>
 
-                <div className="bg-surface-bright rounded-xl p-3 border border-slate-100 flex flex-col items-center justify-center text-center">
-                  <span className="text-label-sm font-label-sm text-on-surface-variant mb-1">คะแนนความประพฤติ</span>
-                  <span className="text-headline-sm font-headline-sm font-bold text-on-surface">{selectedMetrics.behaviorScore}/100</span>
+                <div className="glass-panel glass-panel-hover rounded-xl p-4 flex flex-col items-center justify-center text-center">
+                  <span className="text-label-sm font-label-sm text-outline mb-1 font-semibold">คะแนนความประพฤติ</span>
+                  <span className="text-headline-sm font-headline-sm font-bold text-slate-900">{selectedMetrics.behaviorScore}/100</span>
+                  <span className="text-[10px] text-outline mt-1 block">เฉลี่ยทั้งห้อง: {classAvgBehavior}/100</span>
                 </div>
 
-                <div className="bg-surface-bright rounded-xl p-3 border border-slate-100 flex flex-col items-center justify-center text-center">
-                  <span className="text-label-sm font-label-sm text-on-surface-variant mb-1">เกรดเฉลี่ยปัจจุบัน</span>
+                <div className="glass-panel glass-panel-hover rounded-xl p-4 flex flex-col items-center justify-center text-center">
+                  <span className="text-label-sm font-label-sm text-outline mb-1 font-semibold">เกรดเฉลี่ยปัจจุบัน</span>
                   <span className={`text-headline-sm font-headline-sm font-bold ${
                     selectedMetrics.risk === "red"
                       ? "text-critical-rose"
@@ -516,19 +536,21 @@ export default function AIInsightsPage() {
                       ? "text-warning-amber"
                       : "text-success-emerald"
                   }`}>{selectedMetrics.grade}</span>
+                  <span className="text-[10px] text-outline mt-1 block">เฉลี่ยห้อง: {classAvgPercentage}%</span>
                 </div>
 
-                <div className="bg-surface-bright rounded-xl p-3 border border-slate-100 flex flex-col items-center justify-center text-center">
-                  <span className="text-label-sm font-label-sm text-on-surface-variant mb-1">สถานะส่งงาน</span>
-                  <span className="text-headline-sm font-headline-sm font-bold text-on-surface">
+                <div className="glass-panel glass-panel-hover rounded-xl p-4 flex flex-col items-center justify-center text-center">
+                  <span className="text-label-sm font-label-sm text-outline mb-1 font-semibold">สถานะส่งงาน</span>
+                  <span className="text-headline-sm font-headline-sm font-bold text-slate-900">
                     {scores.filter((sc) => sc.student_id === selectedStudent.id && sc.is_late).length} ชิ้นล่าช้า
                   </span>
+                  <span className="text-[10px] text-outline mt-1 block">เฉลี่ยห้อง: {classAvgLate} ชิ้น/คน</span>
                 </div>
               </div>
 
               {/* AI REPORT RESULT DISPLAY */}
               {generating ? (
-                <div className="bg-surface-container-lowest rounded-2xl shadow-level-1 p-16 text-center flex flex-col items-center justify-center border border-slate-200">
+                <div className="glass-panel rounded-2xl p-16 text-center flex flex-col items-center justify-center">
                   <div className="relative w-16 h-16 flex items-center justify-center mb-4">
                     <div className="absolute inset-0 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
                     <BrainCircuit className="w-6 h-6 text-primary animate-pulse" />
@@ -541,8 +563,8 @@ export default function AIInsightsPage() {
               ) : (
                 <div className="grid grid-cols-12 gap-6">
                   {/* AI Diagnostics Panel (Span 8) */}
-                  <div className="col-span-12 md:col-span-8 bg-surface-container-lowest rounded-2xl shadow-level-1 relative overflow-hidden border-l-4 border-l-primary border border-slate-200 p-6 space-y-4">
-                    <div className="flex items-center gap-3 border-b border-slate-100 pb-3">
+                  <div className="col-span-12 md:col-span-8 glass-panel rounded-2xl relative overflow-hidden border-l-4 border-l-primary p-6 space-y-4">
+                    <div className="flex items-center gap-3 border-b border-slate-100/50 pb-3">
                       <BrainCircuit className="w-5 h-5 text-primary" />
                       <h3 className="text-headline-sm font-headline-sm font-bold text-on-surface">AI วิเคราะห์พฤติกรรมและผลการเรียน</h3>
                     </div>
@@ -553,7 +575,7 @@ export default function AIInsightsPage() {
                           <p>{savedReport.performance_summary}</p>
                         </div>
                         
-                        <div className="bg-surface-bright rounded-xl p-4 border border-slate-200/60">
+                        <div className="bg-surface-bright/50 rounded-xl p-4 border border-slate-200/40">
                           <h4 className="text-label-md font-label-md font-bold text-primary mb-3 flex items-center gap-2">
                             <Sparkles className="w-4 h-4" />
                             <span>แนวทางการสอนปรับปรุงสำหรับครูผู้สอน</span>
@@ -576,7 +598,7 @@ export default function AIInsightsPage() {
                   </div>
 
                   {/* Skills Radar Chart (Span 4) */}
-                  <div className="col-span-12 md:col-span-4 bg-surface-container-lowest rounded-2xl shadow-level-1 border border-slate-200 p-5 flex flex-col justify-between min-h-[300px]">
+                  <div className="col-span-12 md:col-span-4 glass-panel glass-panel-hover rounded-2xl p-5 flex flex-col justify-between min-h-[300px]">
                     <h3 className="text-label-md font-label-md font-bold text-on-surface mb-2">สัดส่วนประเมินผล (%)</h3>
                     <div className="flex-1 w-full h-[220px]">
                       {isClient && getRadarData().length > 0 ? (
@@ -613,10 +635,10 @@ export default function AIInsightsPage() {
               )}
 
               {/* Line Chart Area (Score Trend) */}
-              <div className="bg-surface-container-lowest rounded-2xl shadow-level-1 border border-slate-200 p-6">
+              <div className="glass-panel glass-panel-hover rounded-xl p-6">
                 <div className="flex justify-between items-center mb-6">
                   <h3 className="text-label-md font-label-md font-bold text-on-surface">แนวโน้มระดับผลสัมฤทธิ์ (Cumulative Score Trend)</h3>
-                  <span className="text-xs text-outline bg-surface-bright border border-slate-100 rounded px-2.5 py-1">
+                  <span className="text-xs text-outline bg-surface-bright/55 border border-slate-100/50 rounded px-2.5 py-1">
                     เรียงตามลำดับเวลาชิ้นงาน
                   </span>
                 </div>
