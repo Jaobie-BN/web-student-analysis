@@ -20,7 +20,8 @@ import {
   ChevronRight,
   ChevronUp,
   ChevronDown,
-  ListOrdered
+  ListOrdered,
+  GripVertical
 } from "lucide-react";
 import * as XLSX from "xlsx";
 
@@ -77,6 +78,14 @@ export default function GradebookPage() {
     saveScores,
     updateClassroom
   } = useClassroom();
+
+  // Column dragging states
+  const [draggedColumnIndex, setDraggedColumnIndex] = useState<number | null>(null);
+  const [dragOverColumnIndex, setDragOverColumnIndex] = useState<number | null>(null);
+
+  // Modal dragging states
+  const [modalDraggedIndex, setModalDraggedIndex] = useState<number | null>(null);
+  const [modalDragOverIndex, setModalDragOverIndex] = useState<number | null>(null);
 
   // Modal State for creating assignment
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -266,9 +275,112 @@ export default function GradebookPage() {
           assignment_order: activeOrder,
         }
       });
+      setNotification({ type: "success", msg: "จัดเรียงคอลัมน์สำเร็จ!" });
     } catch (err: any) {
       setNotification({ type: "error", msg: "ล้มเหลวในการจัดลำดับงาน" });
+    } finally {
+      setDraggedColumnIndex(null);
+      setDragOverColumnIndex(null);
     }
+  };
+
+  // Column Drag and Drop Handlers
+  const handleColumnDragStart = (e: React.DragEvent, index: number) => {
+    setDraggedColumnIndex(index);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleColumnDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    if (draggedColumnIndex === null || draggedColumnIndex === index) return;
+    setDragOverColumnIndex(index);
+  };
+
+  const handleColumnDragLeave = () => {
+    setDragOverColumnIndex(null);
+  };
+
+  const handleColumnDrop = async (e: React.DragEvent, targetIndex: number) => {
+    e.preventDefault();
+    if (draggedColumnIndex === null || draggedColumnIndex === targetIndex) {
+      setDraggedColumnIndex(null);
+      setDragOverColumnIndex(null);
+      return;
+    }
+
+    const currentOrder = currentClassroom.behavior_config?.assignment_order || assignments.map(a => a.id);
+    const fullOrder = [...currentOrder];
+    assignments.forEach(a => {
+      if (!fullOrder.includes(a.id)) {
+        fullOrder.push(a.id);
+      }
+    });
+    const activeOrder = fullOrder.filter(id => assignments.some(a => a.id === id));
+
+    const sourceId = filteredAssignments[draggedColumnIndex].id;
+    const targetId = filteredAssignments[targetIndex].id;
+
+    const idxSource = activeOrder.indexOf(sourceId);
+    const idxTarget = activeOrder.indexOf(targetId);
+
+    if (idxSource !== -1 && idxTarget !== -1) {
+      const [removed] = activeOrder.splice(idxSource, 1);
+      activeOrder.splice(idxTarget, 0, removed);
+    }
+
+    try {
+      await updateClassroom({
+        behavior_config: {
+          ...currentClassroom.behavior_config,
+          assignment_order: activeOrder,
+        }
+      });
+      setNotification({ type: "success", msg: "จัดเรียงคอลัมน์สำเร็จ!" });
+    } catch (err: any) {
+      setNotification({ type: "error", msg: "ล้มเหลวในการจัดลำดับงาน" });
+    } finally {
+      setDraggedColumnIndex(null);
+      setDragOverColumnIndex(null);
+    }
+  };
+
+  const handleColumnDragEnd = () => {
+    setDraggedColumnIndex(null);
+    setDragOverColumnIndex(null);
+  };
+
+  // Modal Drag and Drop Handlers
+  const handleModalDragStart = (e: React.DragEvent, index: number) => {
+    setModalDraggedIndex(index);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleModalDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    if (modalDraggedIndex === null || modalDraggedIndex === index) return;
+    setModalDragOverIndex(index);
+  };
+
+  const handleModalDrop = (e: React.DragEvent, targetIndex: number) => {
+    e.preventDefault();
+    if (modalDraggedIndex === null || modalDraggedIndex === targetIndex) {
+      setModalDraggedIndex(null);
+      setModalDragOverIndex(null);
+      return;
+    }
+
+    const updated = [...tempOrder];
+    const [removed] = updated.splice(modalDraggedIndex, 1);
+    updated.splice(targetIndex, 0, removed);
+    setTempOrder(updated);
+
+    setModalDraggedIndex(null);
+    setModalDragOverIndex(null);
+  };
+
+  const handleModalDragEnd = () => {
+    setModalDraggedIndex(null);
+    setModalDragOverIndex(null);
   };
 
   // Sync temp order when modal opens
@@ -815,7 +927,24 @@ export default function GradebookPage() {
                   {filteredAssignments.map((ass, aIdx) => {
                     const stats = getSubmissionStats(ass.id);
                     return (
-                      <th key={ass.id} className="border-b border-slate-200 px-4 py-2 min-w-[140px] align-bottom hover:bg-slate-50 cursor-pointer group relative">
+                      <th
+                        key={ass.id}
+                        draggable
+                        onDragStart={(e) => handleColumnDragStart(e, aIdx)}
+                        onDragOver={(e) => handleColumnDragOver(e, aIdx)}
+                        onDragLeave={handleColumnDragLeave}
+                        onDrop={(e) => handleColumnDrop(e, aIdx)}
+                        onDragEnd={handleColumnDragEnd}
+                        className={`border-b border-slate-200 px-4 py-2 min-w-[140px] align-bottom hover:bg-slate-50 cursor-grab active:cursor-grabbing group relative select-none transition-all ${
+                          draggedColumnIndex === aIdx ? "opacity-35 bg-slate-100/50" : ""
+                        } ${
+                          dragOverColumnIndex === aIdx && draggedColumnIndex !== null && draggedColumnIndex !== aIdx
+                            ? aIdx < draggedColumnIndex
+                              ? "border-l-4 border-l-primary bg-primary/5"
+                              : "border-r-4 border-r-primary bg-primary/5"
+                            : ""
+                        }`}
+                      >
                         <div className="flex flex-col gap-1">
                           <div className="flex items-center justify-between">
                             <span className="text-[9px] text-primary uppercase tracking-wider font-bold">
@@ -1321,18 +1450,32 @@ export default function GradebookPage() {
               {tempOrder.map((ass, index) => (
                 <div
                   key={ass.id}
-                  className="flex items-center justify-between p-3 rounded-2xl border border-slate-150 hover:bg-slate-50 bg-white transition-all gap-3"
+                  draggable
+                  onDragStart={(e) => handleModalDragStart(e, index)}
+                  onDragOver={(e) => handleModalDragOver(e, index)}
+                  onDrop={(e) => handleModalDrop(e, index)}
+                  onDragEnd={handleModalDragEnd}
+                  className={`flex items-center justify-between p-3 rounded-2xl border transition-all gap-3 cursor-grab active:cursor-grabbing ${
+                    modalDraggedIndex === index ? "opacity-35 bg-slate-100" : "bg-white"
+                  } ${
+                    modalDragOverIndex === index && modalDraggedIndex !== null && modalDraggedIndex !== index
+                      ? "border-dashed border-primary bg-primary/5"
+                      : "border-slate-150 hover:bg-slate-50"
+                  }`}
                 >
-                  <div className="flex flex-col gap-0.5 truncate">
-                    <span className="text-[9px] font-bold text-primary uppercase">
-                      {getComponentThaiName(ass.grade_component)}
-                    </span>
-                    <span className="text-sm font-semibold text-slate-800 truncate" title={ass.name}>
-                      {ass.name}
-                    </span>
-                    <span className="text-[10px] text-slate-450">
-                      คะแนนเต็ม: {ass.max_score}
-                    </span>
+                  <div className="flex items-center gap-3 truncate">
+                    <GripVertical className="w-4 h-4 text-slate-400 shrink-0 cursor-grab" />
+                    <div className="flex flex-col gap-0.5 truncate">
+                      <span className="text-[9px] font-bold text-primary uppercase">
+                        {getComponentThaiName(ass.grade_component)}
+                      </span>
+                      <span className="text-sm font-semibold text-slate-800 truncate" title={ass.name}>
+                        {ass.name}
+                      </span>
+                      <span className="text-[10px] text-slate-450">
+                        คะแนนเต็ม: {ass.max_score}
+                      </span>
+                    </div>
                   </div>
                   
                   <div className="flex items-center gap-1.5 shrink-0">
