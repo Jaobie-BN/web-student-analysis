@@ -3,12 +3,12 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useClassroom } from "@/context/ClassroomContext";
-import { db, isDemoMode } from "@/utils/db";
+import { db } from "@/utils/db";
 import { supabase } from "@/utils/supabaseClient";
 import { LogIn, UserPlus, BookOpen } from "lucide-react";
 
 export default function AuthPage() {
-  const { user, refreshClassrooms, isDemo } = useClassroom();
+  const { user, refreshClassrooms } = useClassroom();
   const router = useRouter();
   
   const [isSignUp, setIsSignUp] = useState(false);
@@ -30,25 +30,6 @@ export default function AuthPage() {
     setErrorMsg("");
     setSuccessMsg("");
     setLoading(true);
-
-    if (isDemo) {
-      // In demo mode, we just write a mock user to local storage and refresh
-      try {
-        localStorage.setItem(
-          "sa_auth_user",
-          JSON.stringify({ id: "demo-teacher", email: email || "teacher@demo.com", isDemo: true })
-        );
-        // Dispatch custom storage event to notify context
-        window.dispatchEvent(new Event("storage"));
-        // Force refresh
-        window.location.reload();
-      } catch (err: any) {
-        setErrorMsg(err.message || "Failed to log in to demo mode");
-      } finally {
-        setLoading(false);
-      }
-      return;
-    }
 
     try {
       if (isSignUp) {

@@ -11,7 +11,6 @@ export default function Navbar() {
     currentClassroom,
     setCurrentClassroom,
     createClassroom,
-    isDemo,
     logout
   } = useClassroom();
 
@@ -114,12 +113,6 @@ export default function Navbar() {
 
         {/* Right Side: Demo Mode */}
         <div className="flex items-center gap-4">
-          {isDemo && (
-            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-warning-amber/10 border border-warning-amber/20 text-warning-amber text-xs font-bold">
-              <AlertCircle className="w-3.5 h-3.5" />
-              <span className="text-label-sm font-label-sm">Demo Mode</span>
-            </div>
-          )}
         </div>
       </nav>
 

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
-import { db, Classroom, Student, Attendance, Assignment, StudentScore, AIReport, isDemoMode } from "@/utils/db";
+import { db, Classroom, Student, Attendance, Assignment, StudentScore, AIReport } from "@/utils/db";
 import { useRouter, usePathname } from "next/navigation";
 
 interface ClassroomContextType {
@@ -15,7 +15,6 @@ interface ClassroomContextType {
   attendance: Attendance[];
   scores: StudentScore[];
   reports: AIReport[];
-  isDemo: boolean;
   refreshClassrooms: () => Promise<void>;
   refreshCurrentClassroomData: () => Promise<void>;
   
@@ -430,7 +429,6 @@ export function ClassroomProvider({ children }: { children: React.ReactNode }) {
         attendance,
         scores,
         reports,
-        isDemo: isDemoMode,
         refreshClassrooms,
         refreshCurrentClassroomData,
         createClassroom,
