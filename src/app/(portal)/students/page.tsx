@@ -26,7 +26,8 @@ export default function StudentsPage() {
     createStudent,
     importStudents,
     deleteStudent,
-    updateStudent
+    updateStudent,
+    loading: classroomLoading
   } = useClassroom();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -46,6 +47,73 @@ export default function StudentsPage() {
   
   const [notification, setNotification] = useState<{ type: "success" | "error"; msg: string } | null>(null);
   const [loading, setLoading] = useState(false);
+
+  if (classroomLoading) {
+    return (
+      <div className="space-y-8 animate-pulse text-slate-800">
+        {/* Title skeleton */}
+        <div>
+          <div className="h-8 w-1/3 bg-slate-200 dark:bg-slate-800/60 rounded mb-2"></div>
+          <div className="h-4 w-1/2 bg-slate-200 dark:bg-slate-800/60 rounded"></div>
+        </div>
+
+        {/* Grid workspace skeleton */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left Side Form skeleton */}
+          <div className="glass-panel rounded-3xl p-6 bg-white lg:col-span-1 space-y-6">
+            <div className="h-6 w-1/2 bg-slate-200 dark:bg-slate-800/60 rounded mb-4"></div>
+            <div className="space-y-4">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="space-y-2">
+                  <div className="h-4 w-1/3 bg-slate-200 dark:bg-slate-800/60 rounded"></div>
+                  <div className="h-10 w-full bg-slate-200 dark:bg-slate-800/60 rounded-xl"></div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Right Side skeleton */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Excel Import Panel skeleton */}
+            <div className="glass-panel rounded-3xl p-6 bg-white space-y-4">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div className="flex items-center gap-3 w-full">
+                  <div className="w-12 h-12 rounded-2xl bg-slate-200 dark:bg-slate-800/60 shrink-0"></div>
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 w-1/3 bg-slate-200 dark:bg-slate-800/60 rounded"></div>
+                    <div className="h-3 w-3/4 bg-slate-200 dark:bg-slate-800/60 rounded"></div>
+                  </div>
+                </div>
+                <div className="h-8 w-32 bg-slate-200 dark:bg-slate-800/60 rounded-lg shrink-0"></div>
+              </div>
+              <div className="h-28 w-full bg-slate-200/50 dark:bg-slate-800/30 rounded-2xl"></div>
+            </div>
+
+            {/* Student List View skeleton */}
+            <div className="glass-panel rounded-3xl p-6 bg-white space-y-4">
+              <div className="flex justify-between items-center mb-6">
+                <div className="h-6 w-36 bg-slate-200 dark:bg-slate-800/60 rounded"></div>
+                <div className="h-8 w-64 bg-slate-200 dark:bg-slate-800/60 rounded-xl"></div>
+              </div>
+              <div className="border border-slate-200 rounded-2xl overflow-hidden">
+                <div className="h-10 w-full bg-slate-100 dark:bg-slate-800/40 border-b border-slate-200"></div>
+                <div className="p-4 space-y-4">
+                  {[...Array(5)].map((_, i) => (
+                    <div key={i} className="flex justify-between gap-4 py-2 border-b border-slate-100 last:border-0">
+                      <div className="h-4 w-16 bg-slate-200 dark:bg-slate-800/60 rounded"></div>
+                      <div className="h-4 w-48 bg-slate-200 dark:bg-slate-800/60 rounded"></div>
+                      <div className="h-4 w-24 bg-slate-200 dark:bg-slate-800/60 rounded"></div>
+                      <div className="h-4 w-12 bg-slate-200 dark:bg-slate-800/60 rounded"></div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!currentClassroom) {
     return (
