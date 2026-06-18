@@ -22,21 +22,47 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
-// Import recharts dynamically or guard with mounting check to avoid hydration issues
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell
-} from "recharts";
+import dynamic from "next/dynamic";
+
+const ResponsiveContainer = dynamic(
+  () => import("recharts").then((mod) => mod.ResponsiveContainer),
+  { ssr: false }
+);
+const BarChart = dynamic(
+  () => import("recharts").then((mod) => mod.BarChart),
+  { ssr: false }
+);
+const Bar = dynamic(
+  () => import("recharts").then((mod) => mod.Bar),
+  { ssr: false }
+);
+const XAxis = dynamic(
+  () => import("recharts").then((mod) => mod.XAxis),
+  { ssr: false }
+);
+const YAxis = dynamic(
+  () => import("recharts").then((mod) => mod.YAxis),
+  { ssr: false }
+);
+const Tooltip = dynamic(
+  () => import("recharts").then((mod) => mod.Tooltip),
+  { ssr: false }
+);
+const PieChart = dynamic(
+  () => import("recharts").then((mod) => mod.PieChart),
+  { ssr: false }
+);
+const Pie = dynamic(
+  () => import("recharts").then((mod) => mod.Pie),
+  { ssr: false }
+);
+const Cell = dynamic(
+  () => import("recharts").then((mod) => mod.Cell),
+  { ssr: false }
+);
 
 export default function Dashboard() {
-  const { currentClassroom, students, assignments, attendance, scores } = useClassroom();
+  const { currentClassroom, students, assignments, attendance, scores, loading } = useClassroom();
   const [mounted, setMounted] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [riskFilter, setRiskFilter] = useState("all");
@@ -44,6 +70,107 @@ export default function Dashboard() {
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  if (loading) {
+    return (
+      <div className="flex flex-col gap-stack-gap-lg text-slate-900 font-body-md">
+        {/* Welcome & classroom name banner skeleton */}
+        <div className="mb-stack-gap-lg animate-pulse">
+          <div className="h-8 w-64 bg-slate-200 dark:bg-slate-800/60 rounded mb-2"></div>
+          <div className="h-4 w-96 bg-slate-200 dark:bg-slate-800/60 rounded"></div>
+        </div>
+
+        {/* AI Assistant Insight Widget skeleton */}
+        <div className="bg-surface border-l-4 border-slate-300 dark:border-slate-700 rounded-xl p-card-padding shadow-level-1 mb-stack-gap-lg animate-pulse flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div className="flex items-start gap-4 w-full">
+            <div className="w-12 h-12 rounded-full bg-slate-200 dark:bg-slate-800/60 shrink-0"></div>
+            <div className="flex-1 space-y-2">
+              <div className="h-5 w-48 bg-slate-200 dark:bg-slate-800/60 rounded"></div>
+              <div className="h-4 w-full max-w-2xl bg-slate-200 dark:bg-slate-800/60 rounded"></div>
+            </div>
+          </div>
+          <div className="w-32 h-10 bg-slate-200 dark:bg-slate-800/60 rounded-lg shrink-0"></div>
+        </div>
+
+        {/* Stats Cards Grid skeleton */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-gutter mb-stack-gap-lg">
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="glass-panel rounded-xl p-card-padding animate-pulse">
+              <div className="flex justify-between items-start mb-4">
+                <div className="w-10 h-10 rounded-lg bg-slate-200 dark:bg-slate-800/60"></div>
+              </div>
+              <div className="space-y-2">
+                <div className="h-4 w-24 bg-slate-200 dark:bg-slate-800/60 rounded"></div>
+                <div className="h-7 w-20 bg-slate-200 dark:bg-slate-800/60 rounded"></div>
+              </div>
+              <div className="mt-4 pt-4 border-t border-slate-100/50">
+                <div className="h-3 w-32 bg-slate-200 dark:bg-slate-800/60 rounded"></div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Visual Graphs skeleton */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-gutter mb-stack-gap-lg">
+          {/* Grade distribution graph */}
+          <div className="lg:col-span-2 glass-panel rounded-xl p-card-padding animate-pulse">
+            <div className="flex justify-between items-center mb-6 pb-4 border-b border-slate-100/50">
+              <div className="h-5 w-48 bg-slate-200 dark:bg-slate-800/60 rounded"></div>
+              <div className="h-4 w-16 bg-slate-200 dark:bg-slate-800/60 rounded"></div>
+            </div>
+            <div className="h-64 flex items-end gap-3 px-4 pb-2">
+              <div className="w-full h-1/4 bg-slate-200 dark:bg-slate-800/60 rounded"></div>
+              <div className="w-full h-1/2 bg-slate-200 dark:bg-slate-800/60 rounded"></div>
+              <div className="w-full h-2/3 bg-slate-200 dark:bg-slate-800/60 rounded"></div>
+              <div className="w-full h-3/4 bg-slate-200 dark:bg-slate-800/60 rounded"></div>
+              <div className="w-full h-1/2 bg-slate-200 dark:bg-slate-800/60 rounded"></div>
+              <div className="w-full h-1/3 bg-slate-200 dark:bg-slate-800/60 rounded"></div>
+              <div className="w-full h-2/3 bg-slate-200 dark:bg-slate-800/60 rounded"></div>
+              <div className="w-full h-5/6 bg-slate-200 dark:bg-slate-800/60 rounded"></div>
+            </div>
+          </div>
+
+          {/* Risk Pie Chart */}
+          <div className="glass-panel rounded-xl p-card-padding animate-pulse flex flex-col justify-between">
+            <div className="h-5 w-40 bg-slate-200 dark:bg-slate-800/60 rounded mb-6 pb-4 border-b border-slate-100/50"></div>
+            <div className="h-40 flex items-center justify-center">
+              <div className="w-32 h-32 rounded-full border-12 border-slate-200 dark:border-slate-800/60 flex items-center justify-center">
+                <div className="w-10 h-6 bg-slate-200 dark:bg-slate-800/60 rounded"></div>
+              </div>
+            </div>
+            <div className="mt-4 space-y-2">
+              <div className="h-4 w-full bg-slate-200 dark:bg-slate-800/60 rounded"></div>
+              <div className="h-4 w-full bg-slate-200 dark:bg-slate-800/60 rounded"></div>
+              <div className="h-4 w-full bg-slate-200 dark:bg-slate-800/60 rounded"></div>
+            </div>
+          </div>
+        </div>
+
+        {/* Student Roster skeleton */}
+        <div className="glass-panel rounded-xl overflow-hidden animate-pulse">
+          <div className="p-card-padding border-b border-slate-100/50 flex flex-wrap items-center justify-between gap-4 bg-slate-50/20">
+            <div className="h-6 w-32 bg-slate-200 dark:bg-slate-800/60 rounded"></div>
+            <div className="flex gap-3">
+              <div className="h-10 w-48 bg-slate-200 dark:bg-slate-800/60 rounded-lg"></div>
+              <div className="h-10 w-36 bg-slate-200 dark:bg-slate-800/60 rounded-lg"></div>
+            </div>
+          </div>
+          <div className="p-4 space-y-4">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="flex items-center justify-between gap-4 py-2 border-b border-slate-100 last:border-0">
+                <div className="h-5 w-24 bg-slate-200 dark:bg-slate-800/60 rounded"></div>
+                <div className="h-5 w-48 bg-slate-200 dark:bg-slate-800/60 rounded"></div>
+                <div className="h-5 w-16 bg-slate-200 dark:bg-slate-800/60 rounded"></div>
+                <div className="h-5 w-16 bg-slate-200 dark:bg-slate-800/60 rounded"></div>
+                <div className="h-5 w-12 bg-slate-200 dark:bg-slate-800/60 rounded"></div>
+                <div className="h-8 w-20 bg-slate-200 dark:bg-slate-800/60 rounded-full"></div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!currentClassroom) {
     return (

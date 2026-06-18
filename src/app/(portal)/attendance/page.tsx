@@ -21,7 +21,8 @@ export default function AttendancePage() {
     currentClassroom,
     students,
     attendance,
-    saveAttendance
+    saveAttendance,
+    loading
   } = useClassroom();
 
   const getWeekNumAndDayLabel = (dateStr: string, idx: number) => {
@@ -91,6 +92,71 @@ export default function AttendancePage() {
       setStudentStatuses(defaultStatuses);
     }
   }, [selectedDate, attendance, students]);
+
+  if (loading) {
+    return (
+      <div className="space-y-stack-gap-lg animate-pulse text-slate-900 font-body-md">
+        {/* Title skeleton */}
+        <div className="mb-8">
+          <div className="h-8 w-1/2 bg-slate-200 dark:bg-slate-800/60 rounded mb-2"></div>
+          <div className="h-4 w-1/3 bg-slate-200 dark:bg-slate-800/60 rounded"></div>
+        </div>
+
+        {/* Date Selector Control Panel skeleton */}
+        <div className="bg-surface-container-lowest rounded-xl border border-slate-200 p-card-padding mb-8 shadow-sm flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+          <div className="flex flex-col sm:flex-row items-center gap-4 w-full lg:w-auto">
+            <div className="h-10 w-64 bg-slate-200 dark:bg-slate-800/60 rounded-lg"></div>
+            <div className="h-10 w-36 bg-slate-200 dark:bg-slate-800/60 rounded-lg"></div>
+          </div>
+          <div className="flex flex-col sm:flex-row items-center gap-4 w-full lg:w-auto">
+            <div className="h-10 w-36 bg-slate-200 dark:bg-slate-800/60 rounded-lg"></div>
+            <div className="flex gap-3 w-full sm:w-auto">
+              <div className="h-10 w-44 bg-slate-200 dark:bg-slate-800/60 rounded-lg"></div>
+              <div className="h-10 w-28 bg-slate-200 dark:bg-slate-800/60 rounded-lg"></div>
+            </div>
+          </div>
+        </div>
+
+        {/* Main Grid/Table Area skeleton */}
+        <div className="bg-surface-container-lowest rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col min-h-[500px]">
+          {/* Filters Row skeleton */}
+          <div className="p-4 border-b border-slate-200 bg-surface-bright flex gap-2">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="h-8 w-20 bg-slate-200 dark:bg-slate-800/60 rounded-full"></div>
+            ))}
+          </div>
+
+          {/* Header Row skeleton */}
+          <div className="grid grid-cols-[80px_1fr_auto_1fr] gap-4 p-4 border-b border-slate-200 bg-surface-container-low">
+            <div className="h-4 w-12 bg-slate-200 dark:bg-slate-800/60 rounded mx-auto"></div>
+            <div className="h-4 w-28 bg-slate-200 dark:bg-slate-800/60 rounded ml-4"></div>
+            <div className="h-4 w-[320px] bg-slate-200 dark:bg-slate-800/60 rounded mx-auto"></div>
+            <div className="h-4 w-16 bg-slate-200 dark:bg-slate-800/60 rounded ml-4"></div>
+          </div>
+
+          {/* Student List skeleton */}
+          <div className="flex-1 p-2 space-y-1">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="grid grid-cols-[80px_1fr_auto_1fr] gap-4 items-center p-3 rounded-lg border border-transparent">
+                <div className="text-center space-y-1">
+                  <div className="h-4 w-6 bg-slate-200 dark:bg-slate-800/60 rounded mx-auto"></div>
+                  <div className="h-3 w-16 bg-slate-200 dark:bg-slate-800/60 rounded mx-auto"></div>
+                </div>
+                <div className="flex items-center gap-3 pl-4">
+                  <div className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-800/60 shrink-0"></div>
+                  <div className="h-5 w-40 bg-slate-200 dark:bg-slate-800/60 rounded"></div>
+                </div>
+                <div className="w-[320px] h-10 bg-slate-200 dark:bg-slate-800/60 rounded-lg"></div>
+                <div className="pl-4 pr-2">
+                  <div className="h-10 w-full bg-slate-200 dark:bg-slate-800/60 rounded-lg"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!currentClassroom) {
     return (
