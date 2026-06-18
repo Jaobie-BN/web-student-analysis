@@ -489,6 +489,39 @@ export default function GradebookPage() {
     return count > 0 ? parseFloat((sum / count).toFixed(1)) : 0;
   };
 
+  // Calculate Submission Stats for an Assignment
+  const getSubmissionStats = (assignmentId: string) => {
+    let submittedOnTime = 0;
+    let submittedLate = 0;
+    let missing = 0;
+    const total = students.length;
+
+    students.forEach((s) => {
+      const cell = localScores[s.id]?.[assignmentId];
+      if (cell && cell.score !== null) {
+        if (cell.isLate) {
+          submittedLate++;
+        } else {
+          submittedOnTime++;
+        }
+      } else {
+        missing++;
+      }
+    });
+
+    const submittedTotal = submittedOnTime + submittedLate;
+    const percentage = total > 0 ? (submittedTotal / total) * 100 : 0;
+
+    return {
+      submittedOnTime,
+      submittedLate,
+      missing,
+      total,
+      submittedTotal,
+      percentage,
+    };
+  };
+
   // Calculate Class Average percentage overall
   const getClassFinalAverage = () => {
     if (students.length === 0) return 0;
@@ -683,48 +716,99 @@ export default function GradebookPage() {
                   </th>
                   
                   {/* Assignment Columns */}
-                  {filteredAssignments.map((ass, aIdx) => (
-                    <th key={ass.id} className="border-b border-slate-200 px-4 py-2 min-w-[140px] align-bottom hover:bg-slate-50 cursor-pointer group">
-                      <div className="flex flex-col gap-1">
-                        <div className="flex items-center justify-between">
-                          <span className="text-[9px] text-primary uppercase tracking-wider font-bold">
-                            {getComponentThaiName(ass.grade_component)}
+                  {filteredAssignments.map((ass, aIdx) => {
+                    const stats = getSubmissionStats(ass.id);
+                    return (
+                      <th key={ass.id} className="border-b border-slate-200 px-4 py-2 min-w-[140px] align-bottom hover:bg-slate-50 cursor-pointer group relative">
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[9px] text-primary uppercase tracking-wider font-bold">
+                              {getComponentThaiName(ass.grade_component)}
+                            </span>
+                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleOpenEditModal(ass);
+                                }}
+                                className="text-slate-300 hover:text-primary p-0.5 rounded transition-all"
+                                title="แก้ไขงานนี้"
+                              >
+                                <Edit3 className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteAssignment(ass.id, ass.name);
+                                }}
+                                className="text-slate-300 hover:text-critical-rose p-0.5 rounded transition-all"
+                                title="ลบงานนี้"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            </div>
+                          </div>
+                          <span className="text-label-sm font-label-sm text-on-surface truncate block" title={ass.name}>
+                            {ass.name}
                           </span>
-                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleOpenEditModal(ass);
-                              }}
-                              className="text-slate-300 hover:text-primary p-0.5 rounded transition-all"
-                              title="แก้ไขงานนี้"
-                            >
-                              <Edit3 className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteAssignment(ass.id, ass.name);
-                              }}
-                              className="text-slate-300 hover:text-critical-rose p-0.5 rounded transition-all"
-                              title="ลบงานนี้"
-                            >
-                              <Trash2 className="w-3 h-3" />
-                            </button>
+                          <span className="text-[10px] text-outline font-normal">
+                            เต็ม {ass.max_score}
+                            {currentClassroom?.grade_weight_modes?.[ass.grade_component] === "manual" && ` (น้ำหนัก ${ass.assignment_weight}%)`}
+                          </span>
+
+                          {/* Submission statistics bar & badge */}
+                          <div className="mt-1.5 pt-1.5 border-t border-slate-100 relative group/stats select-none">
+                            <div className="flex items-center justify-between text-[10px] font-medium text-slate-500">
+                              <span>ส่งแล้ว {stats.submittedTotal}/{stats.total} คน</span>
+                              <span className="text-primary font-bold">{Math.round(stats.percentage)}%</span>
+                            </div>
+                            {/* Mini progress bar */}
+                            <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden mt-1">
+                              <div
+                                className="bg-primary h-full rounded-full transition-all duration-300"
+                                style={{ width: `${stats.percentage}%` }}
+                              />
+                            </div>
+                            {/* Detailed Hover Tooltip */}
+                            <div className="absolute top-full left-0 mt-2 hidden group-hover/stats:block z-50 w-48 p-3 rounded-xl bg-slate-900/95 backdrop-blur-sm border border-slate-800 text-white shadow-xl text-left pointer-events-none transition-all duration-200 font-sans">
+                              <div className="text-[11px] font-bold border-b border-slate-800 pb-1.5 mb-1.5 text-slate-300">
+                                รายละเอียดการส่งงาน
+                              </div>
+                              <div className="space-y-1.5 text-[10px] font-normal">
+                                <div className="flex items-center justify-between">
+                                  <span className="flex items-center gap-1.5 text-slate-400">
+                                    <span className="w-2 h-2 rounded-full bg-success-emerald" />
+                                    ส่งตรงเวลา (On-time):
+                                  </span>
+                                  <span className="font-bold text-success-emerald">{stats.submittedOnTime} คน</span>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                  <span className="flex items-center gap-1.5 text-slate-400">
+                                    <span className="w-2 h-2 rounded-full bg-amber-500" />
+                                    ส่งช้า (Late):
+                                  </span>
+                                  <span className="font-bold text-amber-500">{stats.submittedLate} คน</span>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                  <span className="flex items-center gap-1.5 text-slate-400">
+                                    <span className="w-2 h-2 rounded-full bg-critical-rose" />
+                                    ค้างส่ง (Missing):
+                                  </span>
+                                  <span className="font-bold text-critical-rose">{stats.missing} คน</span>
+                                </div>
+                                <div className="border-t border-slate-800 pt-1.5 mt-1.5 flex items-center justify-between text-slate-300 font-semibold">
+                                  <span>รวมทั้งหมด:</span>
+                                  <span>{stats.total} คน</span>
+                                </div>
+                              </div>
+                            </div>
                           </div>
                         </div>
-                        <span className="text-label-sm font-label-sm text-on-surface truncate block" title={ass.name}>
-                          {ass.name}
-                        </span>
-                        <span className="text-[10px] text-outline font-normal">
-                          เต็ม {ass.max_score}
-                          {currentClassroom?.grade_weight_modes?.[ass.grade_component] === "manual" && ` (น้ำหนัก ${ass.assignment_weight}%)`}
-                        </span>
-                      </div>
-                    </th>
-                  ))}
+                      </th>
+                    );
+                  })}
                 </tr>
               </thead>
               

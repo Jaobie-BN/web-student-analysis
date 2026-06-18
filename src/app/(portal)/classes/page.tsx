@@ -14,7 +14,8 @@ import {
   Sliders,
   ChevronRight,
   BookOpen,
-  Lock
+  Lock,
+  AlertTriangle
 } from "lucide-react";
 
 const WEEKDAYS = ["จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์", "อาทิตย์"];
@@ -38,7 +39,8 @@ export default function ClassroomsPage() {
     setCurrentClassroom,
     createClassroom,
     updateClassroom,
-    deleteClassroom
+    deleteClassroom,
+    cleanupClassroomData
   } = useClassroom();
 
   // New classroom state
@@ -84,6 +86,14 @@ export default function ClassroomsPage() {
 
   const [notification, setNotification] = useState<{ type: "success" | "error"; msg: string } | null>(null);
   const [saving, setSaving] = useState(false);
+
+  // Semester Cleanup feature state
+  const [cleanAttendance, setCleanAttendance] = useState(false);
+  const [cleanScores, setCleanScores] = useState(false);
+  const [cleanReports, setCleanReports] = useState(false);
+  const [showCleanupConfirm, setShowCleanupConfirm] = useState(false);
+  const [cleanupConfirmText, setCleanupConfirmText] = useState("");
+  const [isCleaning, setIsCleaning] = useState(false);
 
   // Sync edits when currentClassroom changes
   useEffect(() => {
@@ -323,6 +333,40 @@ export default function ClassroomsPage() {
       setNotification({ type: "success", msg: "ลบห้องเรียนสำเร็จแล้ว" });
     } catch (err: any) {
       setNotification({ type: "error", msg: "เกิดข้อผิดพลาดในการลบห้องเรียน" });
+    }
+  };
+
+  const handleExecuteCleanup = async () => {
+    if (!currentClassroom) return;
+    if (cleanupConfirmText !== currentClassroom.name) {
+      setNotification({ type: "error", msg: "กรุณาพิมพ์ชื่อห้องเรียนให้ถูกต้องเพื่อยืนยัน" });
+      return;
+    }
+
+    if (!cleanAttendance && !cleanScores && !cleanReports) {
+      setNotification({ type: "error", msg: "กรุณาเลือกข้อมูลอย่างน้อย 1 รายการเพื่อล้างข้อมูล" });
+      return;
+    }
+
+    setIsCleaning(true);
+    setNotification(null);
+
+    try {
+      await cleanupClassroomData({
+        attendance: cleanAttendance,
+        scores: cleanScores,
+        reports: cleanReports,
+      });
+      setNotification({ type: "success", msg: "ล้างข้อมูลภาคเรียนเสร็จสิ้น!" });
+      setShowCleanupConfirm(false);
+      setCleanupConfirmText("");
+      setCleanAttendance(false);
+      setCleanScores(false);
+      setCleanReports(false);
+    } catch (err: any) {
+      setNotification({ type: "error", msg: err.message || "เกิดข้อผิดพลาดในการล้างข้อมูล" });
+    } finally {
+      setIsCleaning(false);
     }
   };
 
@@ -942,6 +986,123 @@ export default function ClassroomsPage() {
                     <span className="text-[10px] uppercase font-bold text-rose-500">เกรด 0 (มีคะแนนต่ำกว่า)</span>
                     <span className="text-sm font-black mt-1.5">&lt; {thresholds.g1} คะแนน</span>
                   </div>
+                </div>
+              </div>
+
+              {/* Part 4: Cleanup & Storage Management Section */}
+              <div className="border-t border-slate-100 pt-6">
+                <h3 className="text-base font-bold text-slate-800 flex items-center gap-2 mb-4">
+                  <AlertTriangle className="w-4.5 h-4.5 text-rose-500" />
+                  <span>ล้างข้อมูลภาคเรียน / จัดการพื้นที่ระบบ (Semester Cleanup & Storage Management)</span>
+                </h3>
+
+                <div className="p-4 rounded-2xl bg-rose-50/50 border border-rose-100 text-slate-700 space-y-4">
+                  <div className="flex items-start gap-2.5">
+                    <AlertTriangle className="w-5 h-5 text-rose-500 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-xs font-bold text-rose-700">คำเตือนระบบความปลอดภัย</p>
+                      <p className="text-[11px] text-rose-600 mt-0.5">
+                        การดำเนินการล้างข้อมูลนี้จะลบข้อมูลออกอย่างถาวรตามที่ระบุ เพื่อล้างสถิติสำหรับการเริ่มภาคเรียนใหม่ หรือช่วยเพิ่มพื้นที่จัดเก็บข้อมูลในแผนบริการฟรีของระบบคลาวด์ (โดยเฉพาะการประหยัดพื้นที่จากรายงาน AI)
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <label className="flex items-center gap-2.5 p-3 rounded-xl bg-white border border-slate-200 hover:border-slate-300 transition-colors cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={cleanAttendance}
+                        onChange={(e) => setCleanAttendance(e.target.checked)}
+                        className="w-4 h-4 rounded text-primary-600 focus:ring-primary-500 cursor-pointer"
+                      />
+                      <div>
+                        <p className="text-xs font-bold text-slate-800">ล้างเวลาเรียน</p>
+                        <p className="text-[9px] text-slate-400">ลบประวัติการเช็คชื่อทั้งหมด</p>
+                      </div>
+                    </label>
+
+                    <label className="flex items-center gap-2.5 p-3 rounded-xl bg-white border border-slate-200 hover:border-slate-300 transition-colors cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={cleanScores}
+                        onChange={(e) => setCleanScores(e.target.checked)}
+                        className="w-4 h-4 rounded text-primary-600 focus:ring-primary-500 cursor-pointer"
+                      />
+                      <div>
+                        <p className="text-xs font-bold text-slate-800">ล้างคะแนนสะสม</p>
+                        <p className="text-[9px] text-slate-400">ลบคะแนนชิ้นงาน/จิตพิสัยทั้งหมด</p>
+                      </div>
+                    </label>
+
+                    <label className="flex items-center gap-2.5 p-3 rounded-xl bg-white border border-slate-200 hover:border-slate-300 transition-colors cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={cleanReports}
+                        onChange={(e) => setCleanReports(e.target.checked)}
+                        className="w-4 h-4 rounded text-primary-600 focus:ring-primary-500 cursor-pointer"
+                      />
+                      <div>
+                        <p className="text-xs font-bold text-slate-800">ล้างรายงาน AI</p>
+                        <p className="text-[9px] text-slate-400">ลบรายงานการวิเคราะห์สะสม</p>
+                      </div>
+                    </label>
+                  </div>
+
+                  {showCleanupConfirm ? (
+                    <div className="p-4 rounded-xl bg-white border border-rose-200 space-y-3">
+                      <div>
+                        <p className="text-xs font-bold text-rose-700">ยืนยันการล้างข้อมูลอย่างถาวร</p>
+                        <p className="text-[10px] text-slate-500">
+                          กรุณาพิมพ์ชื่อห้องเรียน <span className="font-bold text-slate-800">&quot;{currentClassroom.name}&quot;</span> ด้านล่าง เพื่อความปลอดภัยก่อนเริ่มดำเนินการ:
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          placeholder="พิมพ์ชื่อห้องเรียนให้ตรง..."
+                          value={cleanupConfirmText}
+                          onChange={(e) => setCleanupConfirmText(e.target.value)}
+                          className="flex-1 px-3 py-1.5 rounded-lg border border-slate-200 focus:border-rose-500 focus:ring-1 focus:ring-rose-500/20 text-xs outline-none"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowCleanupConfirm(false);
+                            setCleanupConfirmText("");
+                          }}
+                          className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-lg cursor-pointer transition-colors"
+                        >
+                          ยกเลิก
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleExecuteCleanup}
+                          disabled={isCleaning || cleanupConfirmText !== currentClassroom.name}
+                          className="px-4 py-1.5 bg-rose-600 hover:bg-rose-500 disabled:opacity-50 text-white text-xs font-bold rounded-lg cursor-pointer transition-colors flex items-center gap-1.5"
+                        >
+                          <span>{isCleaning ? "กำลังล้าง..." : "ยืนยันการลบ"}</span>
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex justify-end">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!cleanAttendance && !cleanScores && !cleanReports) {
+                            setNotification({ type: "error", msg: "กรุณาเลือกข้อมูลอย่างน้อย 1 รายการเพื่อล้างข้อมูล" });
+                            return;
+                          }
+                          setShowCleanupConfirm(true);
+                          setCleanupConfirmText("");
+                        }}
+                        className="px-4 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-600 text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-all active:scale-[0.98]"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>เริ่มล้างข้อมูลที่เลือก</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
 

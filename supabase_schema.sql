@@ -236,6 +236,7 @@ CREATE POLICY "Teachers can perform all actions on AI reports in their classroom
 CREATE INDEX IF NOT EXISTS idx_classrooms_teacher ON classrooms(teacher_id);
 CREATE INDEX IF NOT EXISTS idx_students_classroom ON students(classroom_id);
 CREATE INDEX IF NOT EXISTS idx_attendance_classroom_student ON attendance(classroom_id, student_id);
+CREATE INDEX IF NOT EXISTS idx_attendance_classroom ON attendance(classroom_id);
 CREATE INDEX IF NOT EXISTS idx_assignments_classroom ON assignments(classroom_id);
 CREATE INDEX IF NOT EXISTS idx_student_scores_student ON student_scores(student_id);
 CREATE INDEX IF NOT EXISTS idx_student_scores_assignment ON student_scores(assignment_id);

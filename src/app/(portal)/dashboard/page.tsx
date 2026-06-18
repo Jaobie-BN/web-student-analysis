@@ -120,23 +120,52 @@ export default function Dashboard() {
 
   // Calculate week-on-week attendance rate trend compared to the previous week
   const lpa = currentClassroom.behavior_config?.latesPerAbsence ?? 3;
-  const uniqueLoggedDates = Array.from(new Set(attendance.map((a) => a.session_date))).sort();
   
   let attendanceTrend = 0;
   let hasTrend = false;
   
-  if (uniqueLoggedDates.length >= 2) {
-    const latestDate = uniqueLoggedDates[uniqueLoggedDates.length - 1];
-    const previousDate = uniqueLoggedDates[uniqueLoggedDates.length - 2];
-    
-    const latestRecords = attendance.filter((a) => a.session_date === latestDate);
-    const previousRecords = attendance.filter((a) => a.session_date === previousDate);
-    
-    const latestRate = calculateAttendancePercentage(latestRecords, lpa);
-    const previousRate = calculateAttendancePercentage(previousRecords, lpa);
-    
-    attendanceTrend = parseFloat((latestRate - previousRate).toFixed(1));
-    hasTrend = true;
+  if (attendance.length > 0) {
+    const getWeekNumber = (dateStr: string) => {
+      const date = new Date(dateStr);
+      const start = new Date(currentClassroom.semester_start_date || new Date());
+      const startSunday = new Date(start);
+      startSunday.setDate(start.getDate() - start.getDay());
+      startSunday.setHours(0, 0, 0, 0);
+      
+      const dateSunday = new Date(date);
+      dateSunday.setDate(date.getDate() - date.getDay());
+      dateSunday.setHours(0, 0, 0, 0);
+      
+      const diffMs = dateSunday.getTime() - startSunday.getTime();
+      return Math.round(diffMs / (7 * 24 * 60 * 60 * 1000)) + 1;
+    };
+
+    const attendanceByWeek: { [weekNum: number]: typeof attendance } = {};
+    attendance.forEach((rec) => {
+      const weekNum = getWeekNumber(rec.session_date);
+      if (!attendanceByWeek[weekNum]) {
+        attendanceByWeek[weekNum] = [];
+      }
+      attendanceByWeek[weekNum].push(rec);
+    });
+
+    const loggedWeeks = Object.keys(attendanceByWeek)
+      .map(Number)
+      .sort((a, b) => a - b);
+
+    if (loggedWeeks.length >= 2) {
+      const latestWeek = loggedWeeks[loggedWeeks.length - 1];
+      const previousWeek = loggedWeeks[loggedWeeks.length - 2];
+
+      const latestRecords = attendanceByWeek[latestWeek];
+      const previousRecords = attendanceByWeek[previousWeek];
+
+      const latestRate = calculateAttendancePercentage(latestRecords, lpa);
+      const previousRate = calculateAttendancePercentage(previousRecords, lpa);
+
+      attendanceTrend = parseFloat((latestRate - previousRate).toFixed(1));
+      hasTrend = true;
+    }
   }
 
   const avgFinalScore =

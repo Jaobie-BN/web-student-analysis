@@ -589,60 +589,143 @@ export const db = {
 
   // --- AI REPORTS ---
   async getAIReports(classroomId: string): Promise<AIReport[]> {
+    let studentIds: string[] = [];
+
     if (isDemoMode) {
-      const studentIds = getLocalItem<Student>(LOCAL_STORAGE_KEYS.students)
+      studentIds = getLocalItem<Student>(LOCAL_STORAGE_KEYS.students)
         .filter((s) => s.classroom_id === classroomId)
         .map((s) => s.id);
-      return getLocalItem<AIReport>(LOCAL_STORAGE_KEYS.reports).filter((r) =>
-        studentIds.includes(r.student_id)
-      );
+    } else {
+      const { data: students } = await supabase!
+        .from("students")
+        .select("id")
+        .eq("classroom_id", classroomId);
+      
+      if (students) {
+        studentIds = students.map((s) => s.id);
+      }
     }
-    const { data: students } = await supabase!
-      .from("students")
-      .select("id")
-      .eq("classroom_id", classroomId);
-    
-    if (!students || students.length === 0) return [];
-    
-    const stdIds = students.map((s) => s.id);
-    const { data, error } = await supabase!
-      .from("ai_reports")
-      .select("*")
-      .in("student_id", stdIds);
-    if (error) throw error;
-    return data || [];
+
+    if (studentIds.length === 0) return [];
+
+    // Load AI reports from Local Storage
+    const allReports = getLocalItem<AIReport>(LOCAL_STORAGE_KEYS.reports);
+    return allReports.filter((r) => studentIds.includes(r.student_id));
   },
 
   async saveAIReport(report: Omit<AIReport, "id">): Promise<AIReport> {
-    if (isDemoMode) {
-      const list = getLocalItem<AIReport>(LOCAL_STORAGE_KEYS.reports);
-      const existingIdx = list.findIndex((r) => r.student_id === report.student_id);
-      const savedReport: AIReport = {
-        ...report,
-        id: existingIdx !== -1 ? list[existingIdx].id : "rep-" + Date.now(),
-        created_at: new Date().toISOString(),
-      };
-      if (existingIdx !== -1) {
-        list[existingIdx] = savedReport;
-      } else {
-        list.push(savedReport);
+    const list = getLocalItem<AIReport>(LOCAL_STORAGE_KEYS.reports);
+    const existingIdx = list.findIndex((r) => r.student_id === report.student_id);
+    const savedReport: AIReport = {
+      ...report,
+      id: existingIdx !== -1 ? list[existingIdx].id : "rep-" + Date.now(),
+      created_at: new Date().toISOString(),
+    };
+
+    if (existingIdx !== -1) {
+      list[existingIdx] = savedReport;
+    } else {
+      list.push(savedReport);
+    }
+    
+    setLocalItem(LOCAL_STORAGE_KEYS.reports, list);
+
+    if (!isDemoMode) {
+      // Silently try to delete from Supabase if an old report exists to free up space
+      try {
+        await supabase!.from("ai_reports").delete().eq("student_id", report.student_id);
+      } catch (e) {
+        console.warn("Failed to delete legacy AI report from Supabase:", e);
       }
-      setLocalItem(LOCAL_STORAGE_KEYS.reports, list);
-      return savedReport;
     }
 
-    const { data, error } = await supabase!
-      .from("ai_reports")
-      .upsert({
-        student_id: report.student_id,
-        performance_summary: report.performance_summary,
-        strengths: report.strengths,
-        weaknesses: report.weaknesses,
-        recommendations: report.recommendations,
-      }, { onConflict: "student_id" })
-      .select()
-      .single();
-    if (error) throw error;
-    return data;
+    return savedReport;
+  },
+
+  // --- SYSTEM CLEANUP ---
+  async cleanupClassroomData(
+    classroomId: string,
+    options: { attendance: boolean; scores: boolean; reports: boolean }
+  ): Promise<void> {
+    if (isDemoMode) {
+      if (options.attendance) {
+        const attendanceList = getLocalItem<Attendance>(LOCAL_STORAGE_KEYS.attendance)
+          .filter((a) => a.classroom_id !== classroomId);
+        setLocalItem(LOCAL_STORAGE_KEYS.attendance, attendanceList);
+      }
+
+      if (options.scores) {
+        const assignments = getLocalItem<Assignment>(LOCAL_STORAGE_KEYS.assignments)
+          .filter((a) => a.classroom_id === classroomId)
+          .map((a) => a.id);
+        
+        if (assignments.length > 0) {
+          const scoresList = getLocalItem<StudentScore>(LOCAL_STORAGE_KEYS.scores)
+            .filter((s) => !assignments.includes(s.assignment_id));
+          setLocalItem(LOCAL_STORAGE_KEYS.scores, scoresList);
+        }
+      }
+
+      if (options.reports) {
+        const students = getLocalItem<Student>(LOCAL_STORAGE_KEYS.students)
+          .filter((s) => s.classroom_id === classroomId)
+          .map((s) => s.id);
+        
+        if (students.length > 0) {
+          const reportsList = getLocalItem<AIReport>(LOCAL_STORAGE_KEYS.reports)
+            .filter((r) => !students.includes(r.student_id));
+          setLocalItem(LOCAL_STORAGE_KEYS.reports, reportsList);
+        }
+      }
+      return;
+    }
+
+    // Production (Supabase) Cleanup
+    if (options.attendance) {
+      const { error } = await supabase!
+        .from("attendance")
+        .delete()
+        .eq("classroom_id", classroomId);
+      if (error) throw error;
+    }
+
+    if (options.scores) {
+      const { data: assignments } = await supabase!
+        .from("assignments")
+        .select("id")
+        .eq("classroom_id", classroomId);
+      
+      if (assignments && assignments.length > 0) {
+        const assIds = assignments.map((a) => a.id);
+        const { error } = await supabase!
+          .from("student_scores")
+          .delete()
+          .in("assignment_id", assIds);
+        if (error) throw error;
+      }
+    }
+
+    if (options.reports) {
+      const { data: students } = await supabase!
+        .from("students")
+        .select("id")
+        .eq("classroom_id", classroomId);
+      
+      if (students && students.length > 0) {
+        const studentIds = students.map((s) => s.id);
+
+        // Delete from local storage
+        const reportsList = getLocalItem<AIReport>(LOCAL_STORAGE_KEYS.reports)
+          .filter((r) => !studentIds.includes(r.student_id));
+        setLocalItem(LOCAL_STORAGE_KEYS.reports, reportsList);
+
+        // Also delete from Supabase database to clean up legacy data
+        const { error } = await supabase!
+          .from("ai_reports")
+          .delete()
+          .in("student_id", studentIds);
+        if (error) throw error;
+      }
+    }
   },
 };

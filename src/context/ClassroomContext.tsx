@@ -37,6 +37,7 @@ interface ClassroomContextType {
   
   saveScores: (scoresList: { studentId: string; assignmentId: string; score: number | null; isLate: boolean }[]) => Promise<void>;
   saveAIReport: (studentId: string, summary: string, strengths: string, weaknesses: string, recommendations: string) => Promise<AIReport>;
+  cleanupClassroomData: (options: { attendance: boolean; scores: boolean; reports: boolean }) => Promise<void>;
   
   logout: () => Promise<void>;
 }
@@ -410,6 +411,12 @@ export function ClassroomProvider({ children }: { children: React.ReactNode }) {
     return report;
   };
 
+  const cleanupClassroomData = async (options: { attendance: boolean; scores: boolean; reports: boolean }) => {
+    if (!currentClassroom) throw new Error("No active classroom selected");
+    await db.cleanupClassroomData(currentClassroom.id, options);
+    await refreshCurrentClassroomData();
+  };
+
   return (
     <ClassroomContext.Provider
       value={{
@@ -439,6 +446,7 @@ export function ClassroomProvider({ children }: { children: React.ReactNode }) {
         deleteAssignment,
         saveScores,
         saveAIReport,
+        cleanupClassroomData,
         logout,
       }}
     >
