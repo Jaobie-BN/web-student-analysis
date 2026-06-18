@@ -15,7 +15,12 @@ import {
   CheckSquare,
   Clock,
   X,
-  Download
+  Download,
+  ChevronLeft,
+  ChevronRight,
+  ChevronUp,
+  ChevronDown,
+  ListOrdered
 } from "lucide-react";
 import * as XLSX from "xlsx";
 
@@ -69,7 +74,8 @@ export default function GradebookPage() {
     createAssignment,
     updateAssignment,
     deleteAssignment,
-    saveScores
+    saveScores,
+    updateClassroom
   } = useClassroom();
 
   // Modal State for creating assignment
@@ -96,6 +102,10 @@ export default function GradebookPage() {
   // Filter component state (all, attendance, homework, midterm, final)
   const [filterComponent, setFilterComponent] = useState("all");
 
+  // Modal State for rearranging assignments
+  const [showOrderModal, setShowOrderModal] = useState(false);
+  const [tempOrder, setTempOrder] = useState<any[]>([]);
+
   // Sync default component when currentClassroom weights change
   useEffect(() => {
     if (currentClassroom?.grade_weights) {
@@ -107,6 +117,21 @@ export default function GradebookPage() {
       }
     }
   }, [currentClassroom]);
+
+  // Sort assignments using classroom configuration
+  const getSortedAssignments = (list: typeof assignments) => {
+    const order = currentClassroom?.behavior_config?.assignment_order || [];
+    return [...list].sort((a, b) => {
+      const idxA = order.indexOf(a.id);
+      const idxB = order.indexOf(b.id);
+      if (idxA === -1 && idxB === -1) return 0;
+      if (idxA === -1) return 1;
+      if (idxB === -1) return -1;
+      return idxA - idxB;
+    });
+  };
+
+  const sortedAssignments = getSortedAssignments(assignments);
 
   // Score spreadsheet matrix state
   // key: studentId -> assignmentId -> score record
@@ -207,6 +232,68 @@ export default function GradebookPage() {
     }
   };
 
+  const handleMoveAssignment = async (assignmentId: string, direction: "left" | "right") => {
+    const currentOrder = currentClassroom.behavior_config?.assignment_order || assignments.map(a => a.id);
+    const fullOrder = [...currentOrder];
+    assignments.forEach(a => {
+      if (!fullOrder.includes(a.id)) {
+        fullOrder.push(a.id);
+      }
+    });
+    const activeOrder = fullOrder.filter(id => assignments.some(a => a.id === id));
+
+    const filteredList = filteredAssignments;
+    const filteredIndex = filteredList.findIndex(a => a.id === assignmentId);
+    if (filteredIndex === -1) return;
+
+    const siblingIndex = direction === "left" ? filteredIndex - 1 : filteredIndex + 1;
+    if (siblingIndex < 0 || siblingIndex >= filteredList.length) return;
+
+    const siblingId = filteredList[siblingIndex].id;
+
+    const idxA = activeOrder.indexOf(assignmentId);
+    const idxB = activeOrder.indexOf(siblingId);
+    if (idxA !== -1 && idxB !== -1) {
+      const temp = activeOrder[idxA];
+      activeOrder[idxA] = activeOrder[idxB];
+      activeOrder[idxB] = temp;
+    }
+
+    try {
+      await updateClassroom({
+        behavior_config: {
+          ...currentClassroom.behavior_config,
+          assignment_order: activeOrder,
+        }
+      });
+    } catch (err: any) {
+      setNotification({ type: "error", msg: "ล้มเหลวในการจัดลำดับงาน" });
+    }
+  };
+
+  // Sync temp order when modal opens
+  useEffect(() => {
+    if (showOrderModal) {
+      const sorted = getSortedAssignments(assignments);
+      setTempOrder(sorted);
+    }
+  }, [showOrderModal, assignments]);
+
+  const handleSaveOrder = async () => {
+    try {
+      await updateClassroom({
+        behavior_config: {
+          ...currentClassroom.behavior_config,
+          assignment_order: tempOrder.map(a => a.id),
+        }
+      });
+      setShowOrderModal(false);
+      setNotification({ type: "success", msg: "บันทึกการจัดเรียงลำดับงานสำเร็จ!" });
+    } catch (err: any) {
+      setNotification({ type: "error", msg: "ล้มเหลวในการบันทึกการจัดเรียงลำดับงาน" });
+    }
+  };
+
   const handleScoreChange = (studentId: string, assignmentId: string, value: string) => {
     const targetAss = assignments.find((a) => a.id === assignmentId);
     if (!targetAss) return;
@@ -297,7 +384,7 @@ export default function GradebookPage() {
   // Export spreadsheet matrix to Excel
   const handleExportGrid = () => {
     const headers = ["รหัสประจำตัว", "ชื่อ-นามสกุล", "คะแนนสะสม (%)"];
-    const filteredAsss = assignments.filter((a) => {
+    const filteredAsss = sortedAssignments.filter((a) => {
       if (filterComponent === "all") return true;
       return a.grade_component === filterComponent;
     });
@@ -307,7 +394,7 @@ export default function GradebookPage() {
     });
 
     const rows = students.map((s) => {
-      const studentAssignments = assignments.map((a) => {
+      const studentAssignments = sortedAssignments.map((a) => {
         const cell = localScores[s.id]?.[a.id] || { score: null, isLate: false };
         return {
           assignmentId: a.id,
@@ -423,7 +510,7 @@ export default function GradebookPage() {
   };
 
   // Filter assignments based on dropdown selector
-  const filteredAssignments = assignments.filter((a) => {
+  const filteredAssignments = sortedAssignments.filter((a) => {
     if (filterComponent === "all") return true;
     return a.grade_component === filterComponent;
   });
@@ -441,7 +528,7 @@ export default function GradebookPage() {
     
     let redCount = 0;
     students.forEach((s) => {
-      const studentAssignments = assignments.map((a) => {
+      const studentAssignments = sortedAssignments.map((a) => {
         const cell = localScores[s.id]?.[a.id] || { score: null, isLate: false };
         return {
           assignmentId: a.id,
@@ -528,7 +615,7 @@ export default function GradebookPage() {
     let sum = 0;
     let count = 0;
     students.forEach((s) => {
-      const studentAssignments = assignments.map((a) => {
+      const studentAssignments = sortedAssignments.map((a) => {
         const cell = localScores[s.id]?.[a.id] || { score: null, isLate: false };
         return {
           assignmentId: a.id,
@@ -602,6 +689,15 @@ export default function GradebookPage() {
           >
             <Download className="w-4 h-4 text-slate-500" />
             <span>Export</span>
+          </button>
+
+          <button
+            onClick={() => setShowOrderModal(true)}
+            disabled={assignments.length === 0}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-surface-container-lowest border border-slate-200 text-label-md font-label-md text-slate-900 hover:bg-surface-container-low shadow-sm transition-all cursor-pointer disabled:opacity-50"
+          >
+            <ListOrdered className="w-4 h-4 text-slate-500" />
+            <span>จัดลำดับงาน</span>
           </button>
           
           <button
@@ -728,6 +824,30 @@ export default function GradebookPage() {
                             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                               <button
                                 type="button"
+                                disabled={aIdx === 0}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleMoveAssignment(ass.id, "left");
+                                }}
+                                className="text-slate-300 hover:text-primary p-0.5 rounded transition-all disabled:opacity-20 disabled:hover:text-slate-300 cursor-pointer disabled:cursor-not-allowed"
+                                title="เลื่อนซ้าย"
+                              >
+                                <ChevronLeft className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                disabled={aIdx === filteredAssignments.length - 1}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleMoveAssignment(ass.id, "right");
+                                }}
+                                className="text-slate-300 hover:text-primary p-0.5 rounded transition-all disabled:opacity-20 disabled:hover:text-slate-300 cursor-pointer disabled:cursor-not-allowed"
+                                title="เลื่อนขวา"
+                              >
+                                <ChevronRight className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                type="button"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleOpenEditModal(ass);
@@ -814,7 +934,7 @@ export default function GradebookPage() {
               
               <tbody className="text-body-sm font-body-sm bg-surface-container-lowest divide-y divide-slate-200">
                 {students.map((student, rowIndex) => {
-                  const studentAssignments = assignments.map((a) => {
+                  const studentAssignments = sortedAssignments.map((a) => {
                     const cell = localScores[student.id]?.[a.id] || { score: null, isLate: false };
                     return {
                       assignmentId: a.id,
@@ -1173,6 +1293,106 @@ export default function GradebookPage() {
                 <span>บันทึกการแก้ไข</span>
               </button>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* REARRANGE ASSIGNMENTS GLASS MODAL */}
+      {showOrderModal && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-[100] animate-fade-in">
+          <div className="glass-panel w-full max-w-md p-6 rounded-3xl bg-white space-y-6 mx-4 relative flex flex-col max-h-[85vh]">
+            <button
+              onClick={() => setShowOrderModal(false)}
+              className="absolute right-4 top-4 p-1 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            
+            <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2 border-b pb-3 border-slate-100 shrink-0">
+              <ListOrdered className="w-5 h-5 text-primary" />
+              <span>จัดเรียงลำดับชิ้นงาน / หัวข้อสอบ</span>
+            </h3>
+
+            <p className="text-xs text-slate-500 shrink-0 leading-relaxed">
+              คุณสามารถเปลี่ยนลำดับการแสดงผลคอลัมน์ของแต่ละชิ้นงานได้โดยการใช้ปุ่มเลื่อนขึ้นหรือลง งานด้านบนจะแสดงในคอลัมน์ซ้ายสุดในตารางคะแนน
+            </p>
+
+            <div className="flex-1 overflow-y-auto space-y-2 pr-1">
+              {tempOrder.map((ass, index) => (
+                <div
+                  key={ass.id}
+                  className="flex items-center justify-between p-3 rounded-2xl border border-slate-150 hover:bg-slate-50 bg-white transition-all gap-3"
+                >
+                  <div className="flex flex-col gap-0.5 truncate">
+                    <span className="text-[9px] font-bold text-primary uppercase">
+                      {getComponentThaiName(ass.grade_component)}
+                    </span>
+                    <span className="text-sm font-semibold text-slate-800 truncate" title={ass.name}>
+                      {ass.name}
+                    </span>
+                    <span className="text-[10px] text-slate-450">
+                      คะแนนเต็ม: {ass.max_score}
+                    </span>
+                  </div>
+                  
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <button
+                      type="button"
+                      disabled={index === 0}
+                      onClick={() => {
+                        const nextOrder = [...tempOrder];
+                        const temp = nextOrder[index];
+                        nextOrder[index] = nextOrder[index - 1];
+                        nextOrder[index - 1] = temp;
+                        setTempOrder(nextOrder);
+                      }}
+                      className="p-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-650 disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
+                      title="เลื่อนขึ้น"
+                    >
+                      <ChevronUp className="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      disabled={index === tempOrder.length - 1}
+                      onClick={() => {
+                        const nextOrder = [...tempOrder];
+                        const temp = nextOrder[index];
+                        nextOrder[index] = nextOrder[index + 1];
+                        nextOrder[index + 1] = temp;
+                        setTempOrder(nextOrder);
+                      }}
+                      className="p-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-650 disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
+                      title="เลื่อนลง"
+                    >
+                      <ChevronDown className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+              
+              {tempOrder.length === 0 && (
+                <div className="text-center py-8 text-slate-400 text-sm">
+                  ยังไม่มีชิ้นงานในห้องเรียนนี้
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-3 pt-3 border-t border-slate-100 shrink-0">
+              <button
+                type="button"
+                onClick={() => setShowOrderModal(false)}
+                className="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 transition-all font-semibold text-sm cursor-pointer"
+              >
+                ยกเลิก
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveOrder}
+                className="flex-1 py-2.5 rounded-xl bg-primary hover:bg-primary/95 text-white transition-all font-semibold text-sm cursor-pointer shadow-md"
+              >
+                บันทึกการจัดเรียง
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -32,6 +32,7 @@ export interface Classroom {
     maxAbsencesAllowed?: number;
     latesPerAbsence?: number;
     scoreCalculationMethod?: 'active_rescaling' | 'deductive';
+    assignment_order?: string[];
   };
   created_at?: string;
 }
