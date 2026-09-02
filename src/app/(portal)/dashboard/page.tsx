@@ -633,7 +633,7 @@ export default function Dashboard() {
           {/* Grade distribution graph */}
           <div className="lg:col-span-2 glass-panel glass-panel-hover rounded-xl p-card-padding">
             <div className="flex justify-between items-center mb-6 pb-4 border-b border-slate-100/50">
-              <h3 className="text-headline-sm font-headline-sm text-slate-900">การกระจายผลสัมฤทธิ์ (กลางภาค)</h3>
+              <h3 className="text-headline-sm font-headline-sm text-slate-900">การกระจายเกรดสะสมปัจจุบัน</h3>
               <Link href="/gradebook" className="text-sky-blue text-label-sm font-label-sm hover:underline">ดูรายละเอียด</Link>
             </div>
             <div className="h-64">
