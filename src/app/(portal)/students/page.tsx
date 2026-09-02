@@ -209,11 +209,86 @@ export default function StudentsPage() {
     ];
     
     const ws = XLSX.utils.aoa_to_sheet([...headers, ...sampleData]);
+    ws["!cols"] = [
+      { wch: 15 },
+      { wch: 12 },
+      { wch: 20 },
+      { wch: 20 },
+      { wch: 25 },
+    ];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "รายชื่อตัวอย่าง");
     
     // Download
     XLSX.writeFile(wb, `student_roster_template_${currentClassroom.name}.xlsx`);
+  };
+
+  // Export students roster to Excel (.xlsx)
+  const exportStudents = () => {
+    if (students.length === 0) {
+      setNotification({ type: "error", msg: "ไม่มีรายชื่อนักเรียนในห้องเรียนนี้ให้ส่งออก" });
+      return;
+    }
+
+    // Sort students by student_code
+    const sortedStudents = [...students].sort((a, b) =>
+      a.student_code.localeCompare(b.student_code, undefined, { numeric: true })
+    );
+
+    // Sheet 1: Formatted Thai Sheet
+    const thaiHeaders = [
+      ["ลำดับ", "รหัสนักเรียน", "คำนำหน้า", "ชื่อ", "นามสกุล", "ชื่อ - นามสกุล", "หมายเหตุ"]
+    ];
+    const thaiRows = sortedStudents.map((s, idx) => [
+      idx + 1,
+      s.student_code,
+      s.prefix || "",
+      s.first_name,
+      s.last_name,
+      `${s.prefix || ""}${s.first_name} ${s.last_name}`,
+      s.notes || ""
+    ]);
+    const wsThai = XLSX.utils.aoa_to_sheet([...thaiHeaders, ...thaiRows]);
+    wsThai["!cols"] = [
+      { wch: 8 },  // ลำดับ
+      { wch: 15 }, // รหัสนักเรียน
+      { wch: 12 }, // คำนำหน้า
+      { wch: 20 }, // ชื่อ
+      { wch: 20 }, // นามสกุล
+      { wch: 30 }, // ชื่อ - นามสกุล
+      { wch: 25 }, // หมายเหตุ
+    ];
+
+    // Sheet 2: Import-ready Sheet
+    const importHeaders = [["student_code", "prefix", "first_name", "last_name", "notes"]];
+    const importRows = sortedStudents.map((s) => [
+      s.student_code,
+      s.prefix || "",
+      s.first_name,
+      s.last_name,
+      s.notes || ""
+    ]);
+    const wsImport = XLSX.utils.aoa_to_sheet([...importHeaders, ...importRows]);
+    wsImport["!cols"] = [
+      { wch: 15 },
+      { wch: 12 },
+      { wch: 20 },
+      { wch: 20 },
+      { wch: 25 },
+    ];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, wsThai, "รายชื่อนักเรียน");
+    XLSX.utils.book_append_sheet(wb, wsImport, "สำหรับนำเข้า_Import");
+
+    const safeClassName = currentClassroom.name.replace(/[/\\?%*:|"<>]/g, "_");
+    const fileName = `รายชื่อนักเรียน_${safeClassName}.xlsx`;
+    XLSX.writeFile(wb, fileName);
+
+    setNotification({
+      type: "success",
+      msg: `ส่งออกรายชื่อนักเรียนจำนวน ${students.length} คน เรียบร้อยแล้ว (${fileName})`
+    });
   };
 
   // Handle excel upload parsing
@@ -239,11 +314,29 @@ export default function StudentsPage() {
         // Map and validate columns
         const studentImports = rawJson
           .map((row) => {
-            const sc = row.student_code?.toString().trim();
-            const pf = row.prefix?.toString().trim();
-            const fn = row.first_name?.toString().trim();
-            const ln = row.last_name?.toString().trim();
-            const nt = row.notes?.toString().trim() || "";
+            const sc = (row.student_code ?? row["รหัสนักเรียน"] ?? row["รหัสประจำตัว"] ?? row["รหัส"])?.toString().trim();
+            const pf = (row.prefix ?? row["คำนำหน้า"] ?? row["คำนำหน้าชื่อ"])?.toString().trim();
+            let fn = (row.first_name ?? row["ชื่อ"] ?? row["ชื่อจริง"])?.toString().trim();
+            const ln = (row.last_name ?? row["นามสกุล"])?.toString().trim();
+            const nt = (row.notes ?? row["หมายเหตุ"] ?? row["คำอธิบาย"])?.toString().trim() || "";
+
+            // Handle combined full name if first_name was not provided separately
+            if (!fn && (row["ชื่อ - นามสกุล"] || row["ชื่อ-นามสกุล"] || row["ชื่อสกุล"])) {
+              const fullName = (row["ชื่อ - นามสกุล"] || row["ชื่อ-นามสกุล"] || row["ชื่อสกุล"]).toString().trim();
+              const parts = fullName.split(/\s+/);
+              if (parts.length >= 2) {
+                fn = parts[0];
+                if (!ln) {
+                  return {
+                    student_code: sc,
+                    prefix: pf || "",
+                    first_name: fn,
+                    last_name: parts.slice(1).join(" "),
+                    notes: nt,
+                  };
+                }
+              }
+            }
 
             if (!sc || !fn || !ln) {
               return null; // Invalid row
@@ -260,7 +353,7 @@ export default function StudentsPage() {
           .filter(Boolean) as Omit<Student, "id" | "classroom_id">[];
 
         if (studentImports.length === 0) {
-          throw new Error("ไม่พบข้อมูลนักเรียนที่ถูกต้องตามคอลัมน์ที่กำหนด (student_code, prefix, first_name, last_name)");
+          throw new Error("ไม่พบข้อมูลนักเรียนที่ถูกต้องตามคอลัมน์ที่กำหนด (student_code, prefix, first_name, last_name หรือ รหัสนักเรียน, ชื่อ, นามสกุล)");
         }
 
         await importStudents(studentImports);
@@ -445,14 +538,26 @@ export default function StudentsPage() {
                 </div>
               </div>
 
-              <button
-                type="button"
-                onClick={downloadTemplate}
-                className="px-3 py-1.5 rounded-lg bg-white hover:bg-slate-50 border border-slate-200 text-primary-600 hover:text-primary-750 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
-              >
-                <Download className="w-3.5 h-3.5" />
-                <span>โหลดเทมเพลต Excel</span>
-              </button>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={downloadTemplate}
+                  className="px-3 py-1.5 rounded-lg bg-white hover:bg-slate-50 border border-slate-200 text-primary-600 hover:text-primary-750 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>โหลดเทมเพลต Excel</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={exportStudents}
+                  disabled={students.length === 0}
+                  className="px-3 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="ส่งออกรายชื่อนักเรียนทั้งหมดในห้องเรียนนี้เป็นไฟล์ Excel"
+                >
+                  <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>ส่งออกรายชื่อ (.xlsx)</span>
+                </button>
+              </div>
             </div>
 
             <div className="mt-4 border-2 border-dashed border-slate-200 hover:border-slate-300 rounded-2xl p-6 flex flex-col items-center justify-center text-center transition-colors relative cursor-pointer group">
@@ -481,7 +586,7 @@ export default function StudentsPage() {
                     ลากไฟล์มาวางที่นี่ หรือคลิกเพื่ออัปโหลดไฟล์ Excel (.xlsx)
                   </span>
                   <span className="text-[9px] text-slate-400 mt-1">
-                    รองรับเฉพาะคอลัมน์ student_code, prefix, first_name, last_name, notes
+                    รองรับทั้งคอลัมน์ภาษาอังกฤษ (student_code, prefix, first_name, last_name, notes) และภาษาไทย (รหัสนักเรียน, คำนำหน้า, ชื่อ, นามสกุล, หมายเหตุ)
                   </span>
                 </>
               )}
@@ -495,15 +600,28 @@ export default function StudentsPage() {
                 รายชื่อนักเรียน ({students.length} คน)
               </h3>
 
-              <div className="relative w-full sm:w-64">
-                <input
-                  type="text"
-                  placeholder="ค้นหาชื่อหรือรหัสนักเรียน..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-4 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-805 text-xs focus:border-primary-500 outline-none glow-input"
-                />
-                <Search className="absolute left-3 top-2.5 w-3.5 h-3.5 text-slate-500" />
+              <div className="flex flex-wrap sm:flex-nowrap items-center gap-3 w-full sm:w-auto">
+                <div className="relative w-full sm:w-64">
+                  <input
+                    type="text"
+                    placeholder="ค้นหาชื่อหรือรหัสนักเรียน..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-9 pr-4 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-805 text-xs focus:border-primary-500 outline-none glow-input"
+                  />
+                  <Search className="absolute left-3 top-2.5 w-3.5 h-3.5 text-slate-500" />
+                </div>
+
+                <button
+                  type="button"
+                  onClick={exportStudents}
+                  disabled={students.length === 0}
+                  className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm shrink-0 cursor-pointer"
+                  title="ส่งออกรายชื่อนักเรียนเป็นไฟล์ Excel (.xlsx)"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>ส่งออกรายชื่อ Excel</span>
+                </button>
               </div>
             </div>
 
