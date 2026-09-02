@@ -315,27 +315,30 @@ export default function Dashboard() {
   const yellowRiskCount = studentsWithGrades.filter((s) => s.risk === "yellow").length;
   const greenRiskCount = studentsWithGrades.filter((s) => s.risk === "green").length;
 
-  // Grade distributions count
+  // Grade distributions count (ordered from 0 to 4)
+  const GRADE_ORDER = ["0", "1", "1.5", "2", "2.5", "3", "3.5", "4"];
   const gradeDistribution: { [key: string]: number } = {
-    "4": 0,
-    "3.5": 0,
-    "3": 0,
-    "2.5": 0,
-    "2": 0,
-    "1.5": 0,
-    "1": 0,
     "0": 0,
+    "1": 0,
+    "1.5": 0,
+    "2": 0,
+    "2.5": 0,
+    "3": 0,
+    "3.5": 0,
+    "4": 0,
   };
 
   studentsWithGrades.forEach((s) => {
-    gradeDistribution[s.grade] = (gradeDistribution[s.grade] || 0) + 1;
+    if (gradeDistribution[s.grade] !== undefined) {
+      gradeDistribution[s.grade] += 1;
+    }
   });
 
-  // Recharts Formats
-  const gradeChartData = Object.keys(gradeDistribution).map((g) => ({
+  // Recharts Formats - sorted in ascending order from Grade 0 to 4
+  const gradeChartData = GRADE_ORDER.map((g) => ({
     grade: `เกรด ${g}`,
-    จำนวนนักเรียน: gradeDistribution[g],
-  })).reverse(); // order from grade 0 to 4
+    จำนวนนักเรียน: gradeDistribution[g] || 0,
+  }));
 
   const riskPieData = [
     { name: "ดีเยี่ยม (Green)", value: greenRiskCount, color: "#10b981" },
