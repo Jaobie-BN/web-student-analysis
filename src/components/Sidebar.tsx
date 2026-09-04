@@ -81,8 +81,8 @@ export default function Sidebar() {
       <aside
         onMouseEnter={() => setIsCollapsed(false)}
         onMouseLeave={() => setIsCollapsed(true)}
-        className={`sidebar-transition w-full lg:absolute lg:left-0 lg:top-0 lg:h-full border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0c1222] p-4 flex flex-col justify-between no-print shadow-sm z-[35] transition-colors duration-200 ${
-          currentCollapsed ? "lg:w-20" : "lg:w-72 lg:shadow-xl"
+        className={`w-full lg:absolute lg:left-0 lg:top-0 lg:h-full border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0c1222] p-3.5 flex flex-col justify-between no-print z-[35] transition-[width,box-shadow,background-color] duration-300 ease-in-out overflow-hidden ${
+          currentCollapsed ? "lg:w-20 shadow-sm" : "lg:w-72 shadow-2xl"
         }`}
       >
         <div className="space-y-6">
@@ -96,13 +96,21 @@ export default function Sidebar() {
                 return (
                   <li key={item.path} className="w-full min-w-0">
                     <div
-                      className={`flex items-center px-4 py-3 rounded-xl text-outline/45 dark:text-slate-600 cursor-not-allowed text-sm font-medium min-w-0 ${
-                        currentCollapsed ? "lg:justify-center lg:px-2 lg:gap-0" : "gap-3"
+                      className={`flex items-center h-11 rounded-xl text-slate-400 dark:text-slate-600 cursor-not-allowed text-sm font-medium transition-colors px-3 gap-3 ${
+                        currentCollapsed ? "lg:px-2.5" : ""
                       }`}
                       title={`กรุณาเลือกห้องเรียนก่อนเข้าสู่เมนู ${item.name}`}
                     >
-                      <Icon className="w-4 h-4 shrink-0" />
-                      <span className={`transition-all duration-300 whitespace-nowrap text-xs md:text-sm ${currentCollapsed ? "lg:w-0 lg:opacity-0 lg:pointer-events-none" : "lg:w-auto lg:opacity-100"}`}>
+                      <div className="w-6 h-6 flex items-center justify-center shrink-0">
+                        <Icon className="w-4 h-4" />
+                      </div>
+                      <span
+                        className={`whitespace-nowrap text-xs md:text-sm transition-[max-width,opacity,transform] duration-300 ease-in-out ${
+                          currentCollapsed
+                            ? "lg:max-w-0 lg:opacity-0 lg:-translate-x-2 lg:overflow-hidden lg:pointer-events-none"
+                            : "lg:max-w-[200px] lg:opacity-100 lg:translate-x-0"
+                        }`}
+                      >
                         {item.name}
                       </span>
                     </div>
@@ -115,8 +123,8 @@ export default function Sidebar() {
                   <Link
                     href={item.path}
                     title={item.name}
-                    className={`relative flex items-center px-4 py-3 rounded-xl text-sm transition-all active:scale-[0.98] min-w-0 ${
-                      currentCollapsed ? "lg:justify-center lg:px-2 lg:gap-0" : "gap-3"
+                    className={`relative flex items-center h-11 rounded-xl text-sm transition-all active:scale-[0.98] px-3 gap-3 ${
+                      currentCollapsed ? "lg:px-2.5" : ""
                     } ${
                       active
                         ? "text-primary dark:text-sky-400 font-bold bg-primary/10 dark:bg-sky-400/10 shadow-sm"
@@ -126,8 +134,16 @@ export default function Sidebar() {
                     {active && (
                       <span className="absolute left-0 top-2 bottom-2 w-1 bg-primary dark:bg-sky-400 rounded-r-md" />
                     )}
-                    <Icon className="w-4 h-4 shrink-0" />
-                    <span className={`transition-all duration-300 whitespace-nowrap text-xs md:text-sm ${currentCollapsed ? "lg:w-0 lg:opacity-0 lg:pointer-events-none" : "lg:w-auto lg:opacity-100"}`}>
+                    <div className="w-6 h-6 flex items-center justify-center shrink-0">
+                      <Icon className="w-4 h-4" />
+                    </div>
+                    <span
+                      className={`whitespace-nowrap text-xs md:text-sm font-medium transition-[max-width,opacity,transform] duration-300 ease-in-out ${
+                        currentCollapsed
+                          ? "lg:max-w-0 lg:opacity-0 lg:-translate-x-2 lg:overflow-hidden lg:pointer-events-none"
+                          : "lg:max-w-[200px] lg:opacity-100 lg:translate-x-0"
+                      }`}
+                    >
                       {item.name}
                     </span>
                   </Link>
@@ -138,17 +154,23 @@ export default function Sidebar() {
         </div>
 
         {/* Footer Profile & Logout Button */}
-        <div className="space-y-4 pt-4 border-t border-slate-200 dark:border-slate-800">
-          {/* Profile Card at bottom (Stitch layout style) */}
-          <div className={`flex items-center rounded-xl transition-colors ${currentCollapsed ? "justify-center p-0 lg:gap-0" : "px-2 py-1.5 gap-3"}`}>
+        <div className="space-y-3 pt-3 border-t border-slate-200 dark:border-slate-800">
+          {/* Profile Card at bottom */}
+          <div className="flex items-center px-1 py-1 gap-3 rounded-xl transition-colors">
             <div className="w-9 h-9 rounded-full bg-primary/10 dark:bg-sky-400/10 text-primary dark:text-sky-400 flex items-center justify-center font-bold text-sm shrink-0 border border-primary/20 dark:border-sky-400/20">
               {user?.email ? user.email.charAt(0).toUpperCase() : "T"}
             </div>
-            <div className={`flex flex-col min-w-0 transition-all duration-300 ${currentCollapsed ? "lg:w-0 lg:opacity-0 lg:pointer-events-none" : "lg:w-auto lg:opacity-100"}`}>
-              <span className="text-sm font-bold text-slate-800 dark:text-slate-100">
+            <div
+              className={`flex flex-col min-w-0 transition-[max-width,opacity,transform] duration-300 ease-in-out ${
+                currentCollapsed
+                  ? "lg:max-w-0 lg:opacity-0 lg:-translate-x-2 lg:overflow-hidden lg:pointer-events-none"
+                  : "lg:max-w-[180px] lg:opacity-100 lg:translate-x-0"
+              }`}
+            >
+              <span className="text-sm font-bold text-slate-800 dark:text-slate-100 truncate">
                 ครู {user?.email ? user.email.split('@')[0] : "ผู้สอน"}
               </span>
-              <span className="text-[11px] text-slate-500 dark:text-slate-400">
+              <span className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
                 {currentClassroom ? `วิชา ${currentClassroom.name}` : "ครูประจำการ"}
               </span>
             </div>
@@ -157,20 +179,34 @@ export default function Sidebar() {
           {/* Dedicated Logout Button */}
           <button
             onClick={logout}
-            className={`hidden lg:flex items-center justify-center w-full py-2.5 rounded-xl bg-surface-container-low dark:bg-slate-800/60 hover:bg-rose-50 dark:hover:bg-rose-950/40 hover:border-rose-200 dark:hover:border-rose-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 transition-all active:scale-[0.98] cursor-pointer text-sm font-semibold ${
-              currentCollapsed ? "lg:px-2 lg:gap-0 lg:justify-center" : "gap-2"
+            className={`hidden lg:flex items-center h-10 w-full rounded-xl bg-slate-50 dark:bg-slate-800/60 hover:bg-rose-50 dark:hover:bg-rose-950/40 hover:border-rose-200 dark:hover:border-rose-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 transition-all active:scale-[0.98] cursor-pointer text-sm font-semibold px-3 gap-3 ${
+              currentCollapsed ? "lg:px-2.5" : ""
             }`}
             title="ออกจากระบบ"
           >
-            <LogOut className="w-4 h-4 shrink-0" />
-            <span className={`whitespace-nowrap transition-all duration-300 text-xs md:text-sm ${currentCollapsed ? "lg:w-0 lg:opacity-0 lg:pointer-events-none" : "lg:w-auto lg:opacity-100"}`}>ออกจากระบบ</span>
+            <div className="w-6 h-6 flex items-center justify-center shrink-0">
+              <LogOut className="w-4 h-4" />
+            </div>
+            <span
+              className={`whitespace-nowrap transition-[max-width,opacity,transform] duration-300 ease-in-out text-xs md:text-sm ${
+                currentCollapsed
+                  ? "lg:max-w-0 lg:opacity-0 lg:-translate-x-2 lg:overflow-hidden lg:pointer-events-none"
+                  : "lg:max-w-[180px] lg:opacity-100 lg:translate-x-0"
+              }`}
+            >
+              ออกจากระบบ
+            </span>
           </button>
 
-        <div className={`text-[10px] text-slate-400 dark:text-slate-500 text-center transition-all ${currentCollapsed ? "lg:hidden" : "block"}`}>
-          Student Analytics Platform v1.2
+          <div
+            className={`text-[10px] text-slate-400 dark:text-slate-500 text-center transition-opacity duration-300 ${
+              currentCollapsed ? "lg:opacity-0 lg:pointer-events-none" : "opacity-100"
+            }`}
+          >
+            Student Analytics Platform v1.2
+          </div>
         </div>
-      </div>
-    </aside>
-  </div>
+      </aside>
+    </div>
   );
 }
