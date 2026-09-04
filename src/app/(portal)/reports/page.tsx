@@ -2,14 +2,13 @@
 
 import { useState } from "react";
 import { useClassroom } from "@/context/ClassroomContext";
-import { calculateFinalGrade, generateSessionDates } from "@/utils/mathUtils";
+import { useToast } from "@/context/ToastContext";
+import { calculateFinalGrade, generateSessionDates, generateSmartStudentReport } from "@/utils/mathUtils";
 import {
   Download,
   FileSpreadsheet,
   Printer,
   FileText,
-  CheckCircle,
-  AlertCircle
 } from "lucide-react";
 import * as XLSX from "xlsx";
 
@@ -69,6 +68,7 @@ export default function ReportsPage() {
     scores,
     reports
   } = useClassroom();
+  const { success: toastSuccess, error: toastError } = useToast();
 
   const [printMode, setPrintMode] = useState<"none" | "pap5" | "progress">("none");
   const [exportLoading, setExportLoading] = useState(false);
@@ -76,8 +76,8 @@ export default function ReportsPage() {
   if (!currentClassroom) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh] text-center">
-        <Download className="w-16 h-16 text-slate-400 mb-4 animate-pulse" />
-        <h2 className="text-xl font-bold text-slate-700">กรุณาเลือกหรือสร้างห้องเรียนก่อน</h2>
+        <Download className="w-16 h-16 text-slate-400 dark:text-slate-600 mb-4 animate-pulse" />
+        <h2 className="text-xl font-bold text-slate-700 dark:text-slate-300">กรุณาเลือกหรือสร้างห้องเรียนก่อน</h2>
         <p className="text-slate-500 text-xs mt-2">คุณจำเป็นต้องเลือกห้องเรียนก่อนการเปิดเมนูออกรายงาน</p>
       </div>
     );
@@ -269,9 +269,10 @@ export default function ReportsPage() {
       XLSX.utils.book_append_sheet(wb, wsAssignments, "คะแนนเก็บรายชิ้น");
 
       XLSX.writeFile(wb, `รายงานผลการเรียน_${currentClassroom.name}.xlsx`);
+      toastSuccess("ส่งออกไฟล์ Excel สำเร็จแล้ว!");
     } catch (err) {
       console.error(err);
-      alert("เกิดข้อผิดพลาดในการสร้างไฟล์ Excel");
+      toastError("เกิดข้อผิดพลาดในการสร้างไฟล์ Excel");
     } finally {
       setExportLoading(false);
     }
@@ -289,17 +290,19 @@ export default function ReportsPage() {
   };
 
   return (
-    <div className="space-y-8 animate-fade-in print-container">
+    <div className="space-y-6 animate-fade-in print-container text-slate-900 dark:text-slate-100">
       
       {/* NORMAL SYSTEM VIEW */}
       {printMode === "none" && (
         <>
           <div>
-            <h2 className="text-headline-lg font-headline-lg text-on-surface flex items-center gap-3">
-              <Download className="w-8 h-8 text-primary" />
+            <h2 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-3">
+              <div className="p-2 rounded-xl bg-primary/10 dark:bg-sky-400/10 text-primary dark:text-sky-400">
+                <Download className="w-7 h-7" />
+              </div>
               <span>ระบบจัดทำรายงานและส่งออกข้อมูล (Reports Hub)</span>
             </h2>
-            <p className="text-body-md font-body-md text-on-surface-variant mt-1.5">
+            <p className="text-xs md:text-sm text-slate-500 dark:text-slate-400 mt-1.5">
               พิมพ์ใบคะแนนสะสม รายงานบัญชีเรียกชื่อวิชาหลัก ปพ.5 หรือดึงไฟล์ Excel รายบุคคลและรายเทอมได้ตามต้องการ
             </p>
           </div>
@@ -307,13 +310,13 @@ export default function ReportsPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             
             {/* Card 1: Excel Exporter */}
-            <div className="glass-panel rounded-xl p-card-padding bg-surface-container-lowest border border-slate-200 shadow-level-1 hover:shadow-level-2 transition-all flex flex-col justify-between">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
               <div className="space-y-3">
-                <div className="p-3.5 rounded-2xl bg-success-emerald/10 text-success-emerald border border-success-emerald/20 w-fit">
+                <div className="p-3.5 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 w-fit">
                   <FileSpreadsheet className="w-6 h-6" />
                 </div>
-                <h3 className="text-base font-bold text-slate-800">ส่งออกชีตข้อมูลนักเรียนทั้งหมด (.xlsx)</h3>
-                <p className="text-xs text-on-surface-variant leading-relaxed">
+                <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">ส่งออกชีตข้อมูลนักเรียนทั้งหมด (.xlsx)</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
                   ดาวน์โหลดรายงาน Excel ประกอบไปด้วย 3 แผ่นชีตหลัก: สรุปเกรดเฉลี่ยห้องเรียน, รายละเอียดประวัติการเช็คชื่อรายครั้ง และตารางแสดงคะแนนรายชิ้น
                 </p>
               </div>
@@ -321,7 +324,7 @@ export default function ReportsPage() {
               <button
                 onClick={handleExportExcel}
                 disabled={exportLoading || students.length === 0}
-                className="w-full mt-6 py-3 rounded-xl bg-success-emerald/15 hover:bg-success-emerald/20 border border-success-emerald/30 text-success-emerald font-semibold text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98] cursor-pointer disabled:opacity-50"
+                className="w-full mt-6 py-3 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-bold text-xs md:text-sm flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer disabled:opacity-50"
               >
                 <Download className="w-4 h-4" />
                 <span>{exportLoading ? "กำลังประมวลผล..." : "ดาวน์โหลด Excel (3 แผ่นชีต)"}</span>
@@ -329,13 +332,13 @@ export default function ReportsPage() {
             </div>
 
             {/* Card 2: Print PAP.5 */}
-            <div className="glass-panel rounded-xl p-card-padding bg-surface-container-lowest border border-slate-200 shadow-level-1 hover:shadow-level-2 transition-all flex flex-col justify-between">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
               <div className="space-y-3">
-                <div className="p-3.5 rounded-2xl bg-primary/10 text-primary border border-primary/20 w-fit">
+                <div className="p-3.5 rounded-2xl bg-primary/10 dark:bg-sky-400/10 text-primary dark:text-sky-400 border border-primary/20 w-fit">
                   <Printer className="w-6 h-6" />
                 </div>
-                <h3 className="text-base font-bold text-slate-800">พิมพ์สมุดประเมินผลการเรียน (ปพ.5 Style)</h3>
-                <p className="text-xs text-on-surface-variant leading-relaxed">
+                <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">พิมพ์สมุดประเมินผลการเรียน (ปพ.5 Style)</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
                   สร้างรายงานในหน้าพิมพ์สมบูรณ์แบบเพื่อจัดทำบัญชีเรียกชื่อ ตารางเช็คชื่อ ตารางคะแนนชิ้นงานสะสม และการคำนวณสัดส่วนเกรดตามระเบียบโรงเรียน
                 </p>
               </div>
@@ -343,7 +346,7 @@ export default function ReportsPage() {
               <button
                 onClick={() => handlePrint("pap5")}
                 disabled={students.length === 0}
-                className="w-full mt-6 py-3 rounded-xl bg-primary hover:bg-primary/95 text-white font-semibold text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98] cursor-pointer disabled:opacity-50"
+                className="w-full mt-6 py-3 rounded-xl bg-primary hover:bg-primary/95 text-white font-bold text-xs md:text-sm flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer disabled:opacity-50 shadow-md"
               >
                 <FileText className="w-4 h-4" />
                 <span>จัดเตรียมแบบพิมพ์ ปพ.5</span>
@@ -351,13 +354,13 @@ export default function ReportsPage() {
             </div>
 
             {/* Card 3: Progress Report Cards */}
-            <div className="glass-panel rounded-xl p-card-padding bg-surface-container-lowest border border-slate-200 shadow-level-1 hover:shadow-level-2 transition-all flex flex-col justify-between">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
               <div className="space-y-3">
-                <div className="p-3.5 rounded-2xl bg-secondary-container/10 text-secondary border border-secondary-container/20 w-fit">
+                <div className="p-3.5 rounded-2xl bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20 w-fit">
                   <FileText className="w-6 h-6" />
                 </div>
-                <h3 className="text-base font-bold text-slate-800">พิมพ์ใบรายงานความก้าวหน้ารายบุคคล</h3>
-                <p className="text-xs text-on-surface-variant leading-relaxed">
+                <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">พิมพ์ใบรายงานความก้าวหน้ารายบุคคล</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
                   พิมพ์รายงานผลการศึกษาของนักเรียนทุกคนพร้อมแถบผลสัมฤทธิ์ สถิติการเข้าเรียน จิตพิสัย คำอธิบาย และรวมถึงบันทึกคำแนะนำจาก AI
                 </p>
               </div>
@@ -365,7 +368,7 @@ export default function ReportsPage() {
               <button
                 onClick={() => handlePrint("progress")}
                 disabled={students.length === 0}
-                className="w-full mt-6 py-3 rounded-xl bg-primary hover:bg-primary/95 text-white font-semibold text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98] cursor-pointer disabled:opacity-50"
+                className="w-full mt-6 py-3 rounded-xl bg-primary hover:bg-primary/95 text-white font-bold text-xs md:text-sm flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer disabled:opacity-50 shadow-md"
               >
                 <FileText className="w-4 h-4" />
                 <span>พิมพ์ใบรายงานรายบุคคล</span>
@@ -515,28 +518,28 @@ export default function ReportsPage() {
 
                 {/* Summary Table */}
                 <div>
-                  <table className="w-full text-xs text-center border-collapse border border-gray-350">
+                  <table className="w-full text-xs text-center border-collapse border border-slate-300">
                     <thead>
-                      <tr className="bg-gray-100 border border-gray-350 font-bold">
-                        <th className="border border-gray-350 px-2 py-2">หัวข้อคะแนน (สัดส่วน)</th>
-                        <th className="border border-gray-350 px-2 py-2">ประเมินได้ (%)</th>
-                        <th className="border border-gray-350 px-2 py-2">คาบเรียนทั้งหมด</th>
-                        <th className="border border-gray-350 px-2 py-2">เข้าเรียน (%)</th>
-                        <th className="border border-gray-350 px-2 py-2">เกรดเฉลี่ยสะสม</th>
+                      <tr className="bg-gray-100 border border-slate-300 font-bold">
+                        <th className="border border-slate-300 px-2 py-2">หัวข้อคะแนน (สัดส่วน)</th>
+                        <th className="border border-slate-300 px-2 py-2">ประเมินได้ (%)</th>
+                        <th className="border border-slate-300 px-2 py-2">คาบเรียนทั้งหมด</th>
+                        <th className="border border-slate-300 px-2 py-2">เข้าเรียน (%)</th>
+                        <th className="border border-slate-300 px-2 py-2">เกรดเฉลี่ยสะสม</th>
                       </tr>
                     </thead>
                     <tbody>
-                      <tr className="border border-gray-350">
-                        <td className="border border-gray-350 px-2 py-2 text-left">
+                      <tr className="border border-slate-300">
+                        <td className="border border-slate-300 px-2 py-2 text-left">
                           {activeComponents.map((comp) => {
                             let text = getComponentThaiName(comp, "short");
                             return `${text} (${currentClassroom.grade_weights[comp]}%)`;
                           }).join(", ")}
                         </td>
-                        <td className="border border-gray-350 px-2 py-2 font-mono font-bold">{sm.finalPercentage}%</td>
-                        <td className="border border-gray-350 px-2 py-2">{sm.totalSessions}</td>
-                        <td className="border border-gray-350 px-2 py-2 font-mono">{sm.attendanceRate}%</td>
-                        <td className="border border-gray-350 px-2 py-2 font-bold text-sm text-primary">{sm.grade}</td>
+                        <td className="border border-slate-300 px-2 py-2 font-mono font-bold">{sm.finalPercentage}%</td>
+                        <td className="border border-slate-300 px-2 py-2">{sm.totalSessions}</td>
+                        <td className="border border-slate-300 px-2 py-2 font-mono">{sm.attendanceRate}%</td>
+                        <td className="border border-slate-300 px-2 py-2 font-bold text-sm text-primary">{sm.grade}</td>
                       </tr>
                     </tbody>
                   </table>
@@ -549,35 +552,55 @@ export default function ReportsPage() {
                     <p className="flex justify-between"><span>เข้าเรียนตรงเวลา:</span> <span className="font-bold">{sm.presentCount} วัน</span></p>
                     <p className="flex justify-between mt-1"><span>เข้าเรียนล่าช้า (สาย):</span> <span className="font-bold">{sm.lateCount} วัน</span></p>
                     <p className="flex justify-between mt-1"><span>ลาป่วย/ลากิจ (ลา):</span> <span className="font-bold">{sm.sickCount} วัน</span></p>
-                    <p className="flex justify-between mt-1"><span>ขาดเรียนโดยไม่มีใบลา:</span> <span className="font-bold text-red-650">{sm.absentCount} วัน</span></p>
+                    <p className="flex justify-between mt-1"><span>ขาดเรียนโดยไม่มีใบลา:</span> <span className="font-bold text-rose-600">{sm.absentCount} วัน</span></p>
                   </div>
 
                   <div className="border border-gray-300 rounded-xl p-3">
-                    <h4 className="font-bold text-gray-700 border-b border-gray-200 pb-1 mb-2">พฤติกรรมคุณลักษณะอันพึงประสงค์</h4>
-                    <p className="flex justify-between"><span>จิตพิสัยพฤติกรรม:</span> <span className="font-bold">{sm.behaviorScore} / 100</span></p>
+                    <h4 className="font-bold text-gray-700 border-b border-gray-200 pb-1 mb-2">สรุปผลประเมินรายวิชา</h4>
+                    <p className="flex justify-between"><span>คะแนนสะสมรวม:</span> <span className="font-bold">{sm.finalPercentage}%</span></p>
                     <p className="flex justify-between mt-1"><span>ระดับความเสี่ยง:</span> <span className="font-bold">{sm.risk === "red" ? "วิกฤต (ความเสี่ยงสูง)" : sm.risk === "yellow" ? "เฝ้าระวัง" : "ปกติ"}</span></p>
                   </div>
                 </div>
 
-                {/* AI Psychologist Report / Teacher Comment */}
-                <div className="border border-gray-300 rounded-xl p-4 text-xs space-y-2">
-                  <h4 className="font-bold text-gray-700 border-b border-gray-200 pb-1 mb-2">บทวิเคราะห์ระบบอัจฉริยะ AI & ข้อเสนอแนะคุณครู</h4>
-                  {report ? (
-                    <div className="space-y-3">
-                      <p className="leading-relaxed"><span className="font-bold">สรุปผลการเรียน:</span> {report.performance_summary}</p>
-                      <div className="leading-relaxed space-y-1">
-                        <span className="font-bold">ข้อเสนอแนะส่งเสริม:</span>
-                        <ul className="list-disc list-inside pl-4 mt-1 space-y-1">
-                          {parseRecommendations(report.recommendations).map((rec, idx) => (
-                            <li key={idx}>{rec}</li>
-                          ))}
-                        </ul>
+                {/* Smart Diagnostics & Teacher Recommendation */}
+                {(() => {
+                  const autoSmart = generateSmartStudentReport({
+                    studentCode: sm.student.student_code,
+                    studentName: `${sm.student.prefix || ""}${sm.student.first_name} ${sm.student.last_name}`,
+                    attendanceRate: sm.attendanceRate,
+                    totalAbsences: sm.absentCount,
+                    finalPercentage: sm.finalPercentage,
+                    grade: sm.grade,
+                    risk: sm.risk,
+                    componentScores: sm.componentScores,
+                    lateCount: sm.lateCount,
+                    missingCount: sm.rawAssignments.filter((a) => a.score === null).length,
+                    notes: sm.student.notes || "",
+                    classroomName: currentClassroom.name,
+                  });
+
+                  const summaryText = report?.performance_summary || autoSmart.summary;
+                  const recList = report?.recommendations
+                    ? parseRecommendations(report.recommendations)
+                    : autoSmart.recommendations;
+
+                  return (
+                    <div className="border border-gray-300 rounded-xl p-4 text-xs space-y-2">
+                      <h4 className="font-bold text-gray-700 border-b border-gray-200 pb-1 mb-2">บทวิเคราะห์ผลการเรียน & ข้อเสนอแนะการพัฒนา</h4>
+                      <div className="space-y-3">
+                        <p className="leading-relaxed"><span className="font-bold">สรุปผลสัมฤทธิ์:</span> {summaryText}</p>
+                        <div className="leading-relaxed space-y-1">
+                          <span className="font-bold">ข้อเสนอแนะส่งเสริม:</span>
+                          <ul className="list-disc list-inside pl-4 mt-1 space-y-1">
+                            {recList.map((rec, idx) => (
+                              <li key={idx}>{rec}</li>
+                            ))}
+                          </ul>
+                        </div>
                       </div>
                     </div>
-                  ) : (
-                    <p className="text-gray-400 italic">ไม่มีข้อมูลบทวิเคราะห์จาก AI หรือข้อแนะนำเพิ่มเติมของครูผู้สอนสำหรับนักเรียนท่านนี้</p>
-                  )}
-                </div>
+                  );
+                })()}
 
                 {/* Signature footer */}
                 <div className="flex justify-between pt-6 text-black text-[10px]">

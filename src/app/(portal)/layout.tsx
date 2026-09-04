@@ -34,7 +34,7 @@ export default function PortalLayout({
   if (!user) return null;
 
   return (
-    <div className="min-h-screen lg:h-screen lg:overflow-hidden bg-background flex flex-col">
+    <div className="min-h-screen lg:h-screen lg:overflow-hidden bg-slate-50 dark:bg-[#090d16] text-slate-900 dark:text-slate-100 flex flex-col transition-colors duration-200">
       {/* Top Navigation */}
       <Navbar />
 
@@ -44,7 +44,7 @@ export default function PortalLayout({
         <Sidebar />
 
         {/* Content Workspace */}
-        <main className="flex-1 p-6 md:p-8 overflow-y-auto max-w-full">
+        <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-y-auto max-w-full bg-slate-50 dark:bg-[#090d16] text-slate-900 dark:text-slate-100">
           {children}
         </main>
       </div>

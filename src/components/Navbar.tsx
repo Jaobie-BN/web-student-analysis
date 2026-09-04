@@ -2,17 +2,19 @@
 
 import { useState } from "react";
 import { useClassroom } from "@/context/ClassroomContext";
-import { LogOut, Plus, ChevronDown, Check, LayoutGrid, BookOpen, AlertCircle } from "lucide-react";
+import { useTheme } from "@/context/ThemeContext";
+import { useToast } from "@/context/ToastContext";
+import { Plus, ChevronDown, Check, BookOpen, Sun, Moon } from "lucide-react";
 
 export default function Navbar() {
   const {
-    user,
     classrooms,
     currentClassroom,
     setCurrentClassroom,
     createClassroom,
-    logout
   } = useClassroom();
+  const { resolvedTheme, toggleTheme } = useTheme();
+  const { success, error: toastError } = useToast();
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
@@ -43,8 +45,11 @@ export default function Navbar() {
       setSchedule("ทุกวันจันทร์");
       setStartDate(new Date().toISOString().split("T")[0]);
       setTotalWeeks(18);
+      success(`สร้างห้องเรียน "${name}" สำเร็จเรียบร้อย!`);
     } catch (err: any) {
-      setErrorMsg(err.message || "เกิดข้อผิดพลาดในการสร้างห้องเรียน");
+      const msg = err.message || "เกิดข้อผิดพลาดในการสร้างห้องเรียน";
+      setErrorMsg(msg);
+      toastError(msg);
     } finally {
       setLoading(false);
     }
@@ -52,88 +57,113 @@ export default function Navbar() {
 
   return (
     <>
-      <nav className="bg-surface/95 backdrop-blur-md sticky top-0 z-40 w-full border-b border-slate-200 shadow-sm h-16 px-6 flex items-center justify-between no-print">
+      <nav className="bg-white/95 dark:bg-[#0c1222]/95 backdrop-blur-md sticky top-0 z-40 w-full border-b border-slate-200 dark:border-slate-800 shadow-sm h-16 px-4 md:px-6 flex items-center justify-between no-print transition-colors duration-200">
         {/* Left Side: Brand and Classroom Switcher */}
-        <div className="flex items-center gap-6">
-          <div className="flex items-center gap-2 text-primary font-bold tracking-wide">
-            <BookOpen className="w-5 h-5" />
-            <span className="hidden md:inline text-slate-900 text-label-md font-label-md font-bold uppercase tracking-wider">STUDENT ANALYTICS</span>
+        <div className="flex items-center gap-4 md:gap-6">
+          <div className="flex items-center gap-2.5 text-primary dark:text-sky-400 font-bold tracking-wide">
+            <div className="w-8 h-8 rounded-xl bg-primary/10 dark:bg-sky-400/15 flex items-center justify-center">
+              <BookOpen className="w-4 h-4 text-primary dark:text-sky-400" />
+            </div>
+            <span className="hidden sm:inline text-slate-900 dark:text-slate-100 text-xs font-bold uppercase tracking-wider">STUDENT ANALYTICS</span>
           </div>
 
-          <div className="h-6 w-[1px] bg-slate-200 hidden md:block" />
+          <div className="h-6 w-[1px] bg-slate-200 dark:bg-slate-800 hidden md:block" />
 
           {/* Classroom Selector Dropdown */}
           <div className="relative">
             <button
               onClick={() => setDropdownOpen(!dropdownOpen)}
-              className="flex items-center gap-2 px-4 py-2 bg-surface-container-low border border-slate-200 hover:border-primary/30 text-sm font-semibold text-slate-900 rounded-lg transition-all active:scale-[0.98] cursor-pointer"
+              className="flex items-center gap-2 px-3.5 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-primary/40 dark:hover:border-sky-400/40 text-sm font-semibold text-slate-900 dark:text-slate-100 rounded-xl transition-all active:scale-[0.98] cursor-pointer"
             >
-              <span className="text-body-sm font-body-sm font-medium">{currentClassroom ? currentClassroom.name : "กรุณาเลือกห้องเรียน/วิชา"}</span>
-              <ChevronDown className="w-4 h-4 text-outline" />
+              <span className="text-xs md:text-sm font-medium truncate max-w-[160px] md:max-w-[240px]">
+                {currentClassroom ? currentClassroom.name : "กรุณาเลือกห้องเรียน/วิชา"}
+              </span>
+              <ChevronDown className="w-4 h-4 text-slate-400 shrink-0" />
             </button>
 
             {dropdownOpen && (
-              <div className="absolute left-0 mt-2 w-64 bg-surface border border-slate-200 rounded-lg shadow-level-2 py-2 z-50">
-                <div className="px-3 py-1.5 text-outline text-xs font-bold uppercase tracking-wider">
+              <div className="absolute left-0 mt-2 w-72 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl py-2 z-50 animate-in fade-in zoom-in-95 duration-150">
+                <div className="px-3 py-1.5 text-slate-400 text-[10px] font-bold uppercase tracking-wider">
                   ห้องเรียนของคุณ
                 </div>
                 
-                {classrooms.map((c) => (
-                  <button
-                    key={c.id}
-                    onClick={() => {
-                      setCurrentClassroom(c);
-                      setDropdownOpen(false);
-                    }}
-                    className={`w-full px-4 py-2.5 text-left text-sm flex items-center justify-between hover:bg-primary/5 hover:text-primary transition-colors ${
-                      currentClassroom?.id === c.id ? "text-primary bg-primary/5 font-bold" : "text-on-surface-variant"
-                    }`}
-                  >
-                    <span className="truncate text-body-sm font-body-sm">{c.name}</span>
-                    {currentClassroom?.id === c.id && <Check className="w-4 h-4 text-primary" />}
-                  </button>
-                ))}
+                <div className="max-h-60 overflow-y-auto">
+                  {classrooms.map((c) => (
+                    <button
+                      key={c.id}
+                      onClick={() => {
+                        setCurrentClassroom(c);
+                        setDropdownOpen(false);
+                      }}
+                      className={`w-full px-4 py-2.5 text-left text-xs md:text-sm flex items-center justify-between hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors ${
+                        currentClassroom?.id === c.id ? "text-primary dark:text-sky-400 bg-primary/10 dark:bg-sky-400/10 font-bold" : "text-slate-700 dark:text-slate-300"
+                      }`}
+                    >
+                      <span className="truncate">{c.name}</span>
+                      {currentClassroom?.id === c.id && <Check className="w-4 h-4 text-primary dark:text-sky-400 shrink-0" />}
+                    </button>
+                  ))}
+                </div>
 
-                <div className="h-[1px] bg-slate-100 my-2" />
+                <div className="h-[1px] bg-slate-100 dark:bg-slate-800 my-1.5" />
 
                 <button
                   onClick={() => {
                     setModalOpen(true);
                     setDropdownOpen(false);
                   }}
-                  className="w-full px-4 py-2.5 text-left text-sm text-primary hover:bg-primary/5 flex items-center gap-2 transition-colors font-semibold"
+                  className="w-full px-4 py-2 text-left text-xs md:text-sm text-primary dark:text-sky-400 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2 transition-colors font-semibold"
                 >
                   <Plus className="w-4 h-4" />
-                  <span className="text-label-sm font-label-sm">สร้างห้องเรียนใหม่</span>
+                  <span>สร้างห้องเรียนใหม่</span>
                 </button>
               </div>
             )}
           </div>
         </div>
 
-        {/* Right Side: Demo Mode */}
-        <div className="flex items-center gap-4">
+        {/* Right Side: Theme Switcher & Actions */}
+        <div className="flex items-center gap-3">
+          {/* Dark / Light Mode Toggle Button */}
+          <button
+            onClick={toggleTheme}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:border-primary/40 dark:hover:border-sky-400/40 transition-all active:scale-95 cursor-pointer shadow-sm text-xs font-semibold"
+            title={resolvedTheme === "dark" ? "เปลี่ยนเป็นโหมดสว่าง (Light Mode)" : "เปลี่ยนเป็นโหมดมืด (Dark Mode)"}
+            aria-label="Toggle theme"
+          >
+            {resolvedTheme === "dark" ? (
+              <>
+                <Sun className="w-4 h-4 text-amber-400 animate-in spin-in-180 duration-300 shrink-0" />
+                <span className="hidden sm:inline">โหมดมืด</span>
+              </>
+            ) : (
+              <>
+                <Moon className="w-4 h-4 text-slate-700 animate-in spin-in-180 duration-300 shrink-0" />
+                <span className="hidden sm:inline">โหมดสว่าง</span>
+              </>
+            )}
+          </button>
         </div>
       </nav>
 
       {/* Create Classroom Modal */}
       {modalOpen && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in no-print">
-          <div className="w-full max-w-md glass-panel bg-white border border-slate-200 rounded-3xl p-6 shadow-2xl glow-input">
-            <h3 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
-              <Plus className="w-5 h-5 text-primary-600" />
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in no-print">
+          <div className="w-full max-w-md glass-panel bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-2xl glow-input">
+            <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-4 flex items-center gap-2">
+              <Plus className="w-5 h-5 text-primary dark:text-sky-400" />
               <span>สร้างห้องเรียน/วิชาใหม่</span>
             </h3>
 
             {errorMsg && (
-              <div className="mb-4 p-3 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-500 text-xs">
+              <div className="mb-4 p-3 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-500 dark:text-rose-400 text-xs">
                 {errorMsg}
               </div>
             )}
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+                <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
                   ชื่อวิชา / ห้องเรียน *
                 </label>
                 <input
@@ -141,19 +171,19 @@ export default function Navbar() {
                   placeholder="เช่น ม.6/1 (วิทยาการคำนวณ)"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 focus:border-primary-500 focus:ring-1 focus:ring-primary-500/20 text-slate-800 outline-none text-sm glow-input"
+                  className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:border-primary-500 focus:ring-1 focus:ring-primary-500/20 text-slate-800 dark:text-slate-100 outline-none text-sm glow-input"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+                <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
                   ตารางเรียนรายสัปดาห์
                 </label>
                 <select
                   value={schedule}
                   onChange={(e) => setSchedule(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 focus:border-primary-500 focus:ring-1 focus:ring-primary-500/20 text-slate-700 outline-none text-sm glow-input"
+                  className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:border-primary-500 focus:ring-1 focus:ring-primary-500/20 text-slate-700 dark:text-slate-200 outline-none text-sm glow-input"
                 >
                   <option value="ทุกวันจันทร์">ทุกวันจันทร์</option>
                   <option value="ทุกวันอังคาร">ทุกวันอังคาร</option>
@@ -167,19 +197,19 @@ export default function Navbar() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+                  <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
                     วันที่เริ่มต้นภาคเรียน
                   </label>
                   <input
                     type="date"
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 focus:border-primary-500 focus:ring-1 focus:ring-primary-500/20 text-slate-700 outline-none text-sm glow-input"
+                    className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:border-primary-500 focus:ring-1 focus:ring-primary-500/20 text-slate-700 dark:text-slate-200 outline-none text-sm glow-input"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+                  <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
                     จำนวนสัปดาห์ทั้งหมด
                   </label>
                   <input
@@ -188,24 +218,24 @@ export default function Navbar() {
                     max="40"
                     value={totalWeeks}
                     onChange={(e) => setTotalWeeks(parseInt(e.target.value) || 18)}
-                    className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 focus:border-primary-500 focus:ring-1 focus:ring-primary-500/20 text-slate-700 outline-none text-sm glow-input"
+                    className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:border-primary-500 focus:ring-1 focus:ring-primary-500/20 text-slate-700 dark:text-slate-200 outline-none text-sm glow-input"
                     required
                   />
                 </div>
               </div>
 
-              <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-slate-100">
+              <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-slate-100 dark:border-slate-800">
                 <button
                   type="button"
                   onClick={() => setModalOpen(false)}
-                  className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-600 hover:text-slate-800 text-sm font-semibold transition-all cursor-pointer glow-input"
+                  className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:text-slate-800 text-sm font-semibold transition-all cursor-pointer"
                 >
                   ยกเลิก
                 </button>
                 <button
                   type="submit"
                   disabled={loading}
-                  className="px-4 py-2 rounded-xl bg-primary-600 hover:bg-primary-500 text-white text-sm font-semibold transition-all cursor-pointer"
+                  className="px-4 py-2 rounded-xl bg-primary-600 hover:bg-primary-500 text-white text-sm font-semibold transition-all cursor-pointer shadow-md disabled:opacity-50"
                 >
                   {loading ? "กำลังบันทึก..." : "บันทึก"}
                 </button>

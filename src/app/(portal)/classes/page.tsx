@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useClassroom } from "@/context/ClassroomContext";
+import { useToast } from "@/context/ToastContext";
 import { Classroom } from "@/utils/db";
 import {
   Settings,
@@ -43,6 +44,7 @@ export default function ClassroomsPage() {
     cleanupClassroomData,
     loading
   } = useClassroom();
+  const { success: toastSuccess, error: toastError } = useToast();
 
   // New classroom state
   const [isCreating, setIsCreating] = useState(false);
@@ -85,7 +87,6 @@ export default function ClassroomsPage() {
     scoreCalculationMethod: "deductive" as "active_rescaling" | "deductive",
   });
 
-  const [notification, setNotification] = useState<{ type: "success" | "error"; msg: string } | null>(null);
   const [saving, setSaving] = useState(false);
 
   // Semester Cleanup feature state
@@ -177,8 +178,6 @@ export default function ClassroomsPage() {
       latesPerAbsence: cls.behavior_config?.latesPerAbsence ?? 3,
       scoreCalculationMethod: cls.behavior_config?.scoreCalculationMethod ?? "deductive",
     });
-
-    setNotification(null);
   };
 
   // Helper functions to manage dynamic categories
@@ -196,7 +195,7 @@ export default function ClassroomsPage() {
 
   const handleDeleteCategory = (id: string) => {
     if (categories.length <= 1) {
-      setNotification({ type: "error", msg: "ต้องมีหมวดหมู่ประเมินผลอย่างน้อย 1 หมวดหมู่" });
+      toastError("ต้องมีหมวดหมู่ประเมินผลอย่างน้อย 1 หมวดหมู่");
       return;
     }
     setCategories(categories.filter((c) => c.id !== id));
@@ -231,11 +230,10 @@ export default function ClassroomsPage() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    setNotification(null);
     if (!newClassName.trim()) return;
 
     if (newWeeklyScheduleDays.length === 0) {
-      setNotification({ type: "error", msg: "กรุณาเลือกวันเรียนอย่างน้อย 1 วัน" });
+      toastError("กรุณาเลือกวันเรียนอย่างน้อย 1 วัน");
       return;
     }
 
@@ -246,26 +244,25 @@ export default function ClassroomsPage() {
       setNewClassName("");
       setNewWeeklyScheduleDays(["จันทร์"]);
       handleSelectClass(cls);
-      setNotification({ type: "success", msg: "สร้างห้องเรียนสำเร็จ!" });
+      toastSuccess("สร้างห้องเรียนสำเร็จ!");
     } catch (err: any) {
-      setNotification({ type: "error", msg: err.message || "เกิดข้อผิดพลาดในการสร้างห้องเรียน" });
+      toastError(err.message || "เกิดข้อผิดพลาดในการสร้างห้องเรียน");
     }
   };
 
   const handleSaveConfig = async () => {
-    setNotification(null);
     setSaving(true);
 
     // Validate category names
     if (categories.some((cat) => !cat.name.trim())) {
-      setNotification({ type: "error", msg: "กรุณาระบุชื่อหมวดหมู่คะแนนให้ครบถ้วน" });
+      toastError("กรุณาระบุชื่อหมวดหมู่คะแนนให้ครบถ้วน");
       setSaving(false);
       return;
     }
     const names = categories.map((cat) => cat.name.trim());
     const hasDuplicates = names.some((name, idx) => names.indexOf(name) !== idx);
     if (hasDuplicates) {
-      setNotification({ type: "error", msg: "ชื่อหมวดหมู่คะแนนต้องไม่ซ้ำกัน" });
+      toastError("ชื่อหมวดหมู่คะแนนต้องไม่ซ้ำกัน");
       setSaving(false);
       return;
     }
@@ -273,7 +270,7 @@ export default function ClassroomsPage() {
     // Validate weights total
     const sum = categories.reduce((s, cat) => s + cat.weight, 0);
     if (sum !== 100) {
-      setNotification({ type: "error", msg: `สัดส่วนคะแนนสะสมต้องรวมกันได้ 100% เสมอ (ขณะนี้รวมได้ ${sum}%)` });
+      toastError(`สัดส่วนคะแนนสะสมต้องรวมกันได้ 100% เสมอ (ขณะนี้รวมได้ ${sum}%)`);
       setSaving(false);
       return;
     }
@@ -288,13 +285,13 @@ export default function ClassroomsPage() {
       thresholds.g15 > thresholds.g1;
 
     if (!isOrderCorrect) {
-      setNotification({ type: "error", msg: "เกณฑ์คะแนนเกรดไม่ถูกต้อง กรุณาตั้งค่าลดหลั่นกันตามลำดับ (เกรด 4 สูงสุด และเกรด 1 ต่ำสุด)" });
+      toastError("เกณฑ์คะแนนเกรดไม่ถูกต้อง กรุณาตั้งค่าลดหลั่นกันตามลำดับ (เกรด 4 สูงสุด และเกรด 1 ต่ำสุด)");
       setSaving(false);
       return;
     }
 
     if (editScheduleDays.length === 0) {
-      setNotification({ type: "error", msg: "กรุณาเลือกวันเรียนอย่างน้อย 1 วัน" });
+      toastError("กรุณาเลือกวันเรียนอย่างน้อย 1 วัน");
       setSaving(false);
       return;
     }
@@ -319,9 +316,9 @@ export default function ClassroomsPage() {
         grade_thresholds: thresholds,
         behavior_config: behaviorConfig,
       });
-      setNotification({ type: "success", msg: "บันทึกการปรับตั้งค่าระบบสำเร็จ!" });
+      toastSuccess("บันทึกการปรับตั้งค่าระบบสำเร็จ!");
     } catch (err: any) {
-      setNotification({ type: "error", msg: err.message || "เกิดข้อผิดพลาดในการบันทึก" });
+      toastError(err.message || "เกิดข้อผิดพลาดในการบันทึก");
     } finally {
       setSaving(false);
     }
@@ -331,26 +328,25 @@ export default function ClassroomsPage() {
     if (!confirm("คุณแน่ใจหรือไม่ว่าต้องการลบห้องเรียนนี้? ข้อมูลนักเรียน คะแนน และสถิติทั้งหมดจะถูกลบถาวร!")) return;
     try {
       await deleteClassroom(id);
-      setNotification({ type: "success", msg: "ลบห้องเรียนสำเร็จแล้ว" });
+      toastSuccess("ลบห้องเรียนสำเร็จแล้ว");
     } catch (err: any) {
-      setNotification({ type: "error", msg: "เกิดข้อผิดพลาดในการลบห้องเรียน" });
+      toastError("เกิดข้อผิดพลาดในการลบห้องเรียน");
     }
   };
 
   const handleExecuteCleanup = async () => {
     if (!currentClassroom) return;
     if (cleanupConfirmText !== currentClassroom.name) {
-      setNotification({ type: "error", msg: "กรุณาพิมพ์ชื่อห้องเรียนให้ถูกต้องเพื่อยืนยัน" });
+      toastError("กรุณาพิมพ์ชื่อห้องเรียนให้ถูกต้องเพื่อยืนยัน");
       return;
     }
 
     if (!cleanAttendance && !cleanScores && !cleanReports) {
-      setNotification({ type: "error", msg: "กรุณาเลือกข้อมูลอย่างน้อย 1 รายการเพื่อล้างข้อมูล" });
+      toastError("กรุณาเลือกข้อมูลอย่างน้อย 1 รายการเพื่อล้างข้อมูล");
       return;
     }
 
     setIsCleaning(true);
-    setNotification(null);
 
     try {
       await cleanupClassroomData({
@@ -358,14 +354,14 @@ export default function ClassroomsPage() {
         scores: cleanScores,
         reports: cleanReports,
       });
-      setNotification({ type: "success", msg: "ล้างข้อมูลภาคเรียนเสร็จสิ้น!" });
+      toastSuccess("ล้างข้อมูลภาคเรียนเสร็จสิ้น!");
       setShowCleanupConfirm(false);
       setCleanupConfirmText("");
       setCleanAttendance(false);
       setCleanScores(false);
       setCleanReports(false);
     } catch (err: any) {
-      setNotification({ type: "error", msg: err.message || "เกิดข้อผิดพลาดในการล้างข้อมูล" });
+      toastError(err.message || "เกิดข้อผิดพลาดในการล้างข้อมูล");
     } finally {
       setIsCleaning(false);
     }
@@ -373,49 +369,49 @@ export default function ClassroomsPage() {
 
   if (loading) {
     return (
-      <div className="space-y-8 animate-pulse text-slate-800">
+      <div className="space-y-8 animate-pulse text-slate-800 dark:text-slate-200">
         {/* Page Header skeleton */}
         <div className="flex justify-between items-center">
           <div className="space-y-2">
-            <div className="h-8 w-64 bg-slate-200 dark:bg-slate-800/60 rounded mb-2"></div>
-            <div className="h-4 w-96 bg-slate-200 dark:bg-slate-800/60 rounded"></div>
+            <div className="h-8 w-64 bg-slate-200 dark:bg-slate-800 rounded mb-2"></div>
+            <div className="h-4 w-96 bg-slate-200 dark:bg-slate-800 rounded"></div>
           </div>
-          <div className="h-10 w-36 bg-slate-200 dark:bg-slate-800/60 rounded-xl"></div>
+          <div className="h-10 w-36 bg-slate-200 dark:bg-slate-800 rounded-xl"></div>
         </div>
 
         {/* Grid workspace skeleton */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Side: Class list skeleton */}
-          <div className="glass-panel rounded-3xl p-6 bg-white border border-slate-200 lg:col-span-1 space-y-4">
-            <div className="h-5 w-32 bg-slate-200 dark:bg-slate-800/60 rounded"></div>
+          <div className="rounded-3xl p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 lg:col-span-1 space-y-4">
+            <div className="h-5 w-32 bg-slate-200 dark:bg-slate-800 rounded"></div>
             <div className="space-y-2">
               {[...Array(3)].map((_, i) => (
-                <div key={i} className="h-16 w-full bg-slate-200/50 dark:bg-slate-800/30 rounded-2xl"></div>
+                <div key={i} className="h-16 w-full bg-slate-200/50 dark:bg-slate-800/40 rounded-2xl"></div>
               ))}
             </div>
           </div>
 
           {/* Right Side: Config Editor skeleton */}
-          <div className="lg:col-span-2 glass-panel rounded-3xl p-6 bg-white border border-slate-200 space-y-6">
-            <div className="h-6 w-48 bg-slate-200 dark:bg-slate-800/60 rounded"></div>
+          <div className="lg:col-span-2 rounded-3xl p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-6">
+            <div className="h-6 w-48 bg-slate-200 dark:bg-slate-800 rounded"></div>
             <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
-                <div className="h-4 w-12 bg-slate-200/60 dark:bg-slate-800/40 rounded"></div>
-                <div className="h-10 w-full bg-slate-200 dark:bg-slate-800/60 rounded-xl"></div>
+                <div className="h-4 w-12 bg-slate-200/60 dark:bg-slate-800/50 rounded"></div>
+                <div className="h-10 w-full bg-slate-200 dark:bg-slate-800 rounded-xl"></div>
               </div>
               <div className="space-y-2">
-                <div className="h-4 w-24 bg-slate-200/60 dark:bg-slate-800/40 rounded"></div>
-                <div className="h-10 w-full bg-slate-200 dark:bg-slate-800/60 rounded-xl"></div>
+                <div className="h-4 w-24 bg-slate-200/60 dark:bg-slate-800/50 rounded"></div>
+                <div className="h-10 w-full bg-slate-200 dark:bg-slate-800 rounded-xl"></div>
               </div>
               <div className="space-y-2">
-                <div className="h-4 w-16 bg-slate-200/60 dark:bg-slate-800/40 rounded"></div>
-                <div className="h-10 w-full bg-slate-200 dark:bg-slate-800/60 rounded-xl"></div>
+                <div className="h-4 w-16 bg-slate-200/60 dark:bg-slate-800/50 rounded"></div>
+                <div className="h-10 w-full bg-slate-200 dark:bg-slate-800 rounded-xl"></div>
               </div>
             </div>
-            <div className="space-y-4 pt-4 border-t border-slate-100">
-              <div className="h-6 w-64 bg-slate-200 dark:bg-slate-800/60 rounded"></div>
+            <div className="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+              <div className="h-6 w-64 bg-slate-200 dark:bg-slate-800 rounded"></div>
               {[...Array(3)].map((_, i) => (
-                <div key={i} className="h-14 w-full bg-slate-250/40 dark:bg-slate-800/20 rounded-2xl"></div>
+                <div key={i} className="h-14 w-full bg-slate-200/40 dark:bg-slate-800/30 rounded-2xl"></div>
               ))}
             </div>
           </div>
@@ -425,70 +421,55 @@ export default function ClassroomsPage() {
   }
 
   return (
-    <div className="space-y-8 animate-fade-in text-slate-800">
-      <div className="flex justify-between items-center">
+    <div className="space-y-6 animate-fade-in text-slate-900 dark:text-slate-100">
+      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
         <div>
-          <h2 className="text-2xl md:text-3xl font-extrabold text-slate-800 flex items-center gap-3">
-            <Settings className="w-8 h-8 text-primary-600" />
+          <h2 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-primary/10 dark:bg-sky-400/10 text-primary dark:text-sky-400">
+              <Settings className="w-7 h-7" />
+            </div>
             <span>ตั้งค่าห้องเรียนและเกณฑ์คะแนน</span>
           </h2>
-          <p className="text-slate-550 text-sm mt-1.5">
+          <p className="text-xs md:text-sm text-slate-500 dark:text-slate-400 mt-1.5">
             ปรับแต่งสัดส่วนคะแนนสะสม เกณฑ์คะแนนตัดเกรด และข้อมูลวันเปิดเทอมรายวิชา
           </p>
         </div>
 
         <button
           onClick={() => setIsCreating(!isCreating)}
-          className="px-4 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-500 text-white text-sm font-semibold flex items-center gap-2 transition-all active:scale-[0.98] cursor-pointer"
+          className="px-4 py-2.5 rounded-xl bg-primary hover:bg-primary/90 text-white text-xs md:text-sm font-bold flex items-center gap-2 transition-all active:scale-95 cursor-pointer shadow-md self-start sm:self-auto"
         >
           <Plus className="w-4 h-4" />
           <span>สร้างห้องเรียน</span>
         </button>
       </div>
 
-      {notification && (
-        <div
-          className={`p-4 rounded-2xl flex items-start gap-3 border ${
-            notification.type === "success"
-              ? "bg-emerald-50 border-emerald-200 text-emerald-600"
-              : "bg-rose-50 border-rose-200 text-rose-600"
-          }`}
-        >
-          {notification.type === "success" ? (
-            <CheckCircle className="w-5 h-5 shrink-0" />
-          ) : (
-            <AlertCircle className="w-5 h-5 shrink-0" />
-          )}
-          <span className="text-sm font-semibold">{notification.msg}</span>
-        </div>
-      )}
-
       {/* Grid: Create or List + Config Panel */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* Left Side: Class list */}
-        <div className="glass-panel rounded-3xl p-6 bg-white border border-slate-200 lg:col-span-1 space-y-4">
-          <h3 className="text-base font-bold text-slate-800">ห้องเรียนทั้งหมด</h3>
+        <div className="rounded-3xl p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 lg:col-span-1 space-y-4 shadow-sm">
+          <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">ห้องเรียนทั้งหมด</h3>
           
           {isCreating ? (
-            <form onSubmit={handleCreate} className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-4 glow-input">
-              <h4 className="text-sm font-bold text-primary-600">สร้างวิชาใหม่</h4>
+            <form onSubmit={handleCreate} className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-4 glow-input">
+              <h4 className="text-sm font-bold text-primary dark:text-sky-400">สร้างวิชาใหม่</h4>
               
               <div className="space-y-3">
                 <div>
-                  <label className="text-[10px] uppercase font-bold text-slate-400">ชื่อห้องเรียน/วิชา</label>
+                  <label className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400">ชื่อห้องเรียน/วิชา</label>
                   <input
                     type="text"
                     required
                     placeholder="เช่น ม.6/2 คอมพิวเตอร์"
                     value={newClassName}
                     onChange={(e) => setNewClassName(e.target.value)}
-                    className="w-full mt-1 px-3 py-2 rounded-xl bg-white border border-slate-200 focus:border-primary-500 outline-none text-xs text-slate-800 glow-input"
+                    className="w-full mt-1 px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:border-primary dark:focus:border-sky-400 outline-none text-xs text-slate-900 dark:text-slate-100 glow-input"
                   />
                 </div>
 
                 <div>
-                  <label className="text-[10px] uppercase font-bold text-slate-400">วันเรียนในสัปดาห์ (เลือกได้หลายวัน)</label>
+                  <label className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400">วันเรียนในสัปดาห์ (เลือกได้หลายวัน)</label>
                   <div className="flex flex-wrap gap-1.5 mt-1.5">
                     {WEEKDAYS.map((day, idx) => {
                       const isSelected = newWeeklyScheduleDays.includes(day);
@@ -507,8 +488,8 @@ export default function ClassroomsPage() {
                           }}
                           className={`w-8 h-8 flex items-center justify-center rounded-xl text-xs font-bold border transition-all cursor-pointer ${
                             isSelected
-                              ? "bg-primary-600 border-primary-600 text-white shadow-sm"
-                              : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
+                              ? "bg-primary dark:bg-sky-500 border-primary dark:border-sky-500 text-white shadow-sm"
+                              : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
                           }`}
                           title={day}
                         >
@@ -517,30 +498,30 @@ export default function ClassroomsPage() {
                       );
                     })}
                   </div>
-                  <span className="text-[10px] text-slate-400 mt-1 block">
+                  <span className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 block">
                     วันเรียน: {newWeeklyScheduleDays.join(", ")}
                   </span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="text-[10px] uppercase font-bold text-slate-400">วันเปิดเทอม</label>
+                    <label className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400">วันเปิดเทอม</label>
                     <input
                       type="date"
                       required
                       value={newStartDate}
                       onChange={(e) => setNewStartDate(e.target.value)}
-                      className="w-full mt-1 px-3 py-2 rounded-xl bg-white border border-slate-200 focus:border-primary-500 outline-none text-[10px] text-slate-700 glow-input"
+                      className="w-full mt-1 px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:border-primary dark:focus:border-sky-400 outline-none text-[10px] text-slate-900 dark:text-slate-100 glow-input cursor-pointer"
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] uppercase font-bold text-slate-400">สัปดาห์ทั้งหมด</label>
+                    <label className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400">สัปดาห์ทั้งหมด</label>
                     <input
                       type="number"
                       required
                       value={newTotalWeeks}
                       onChange={(e) => setNewTotalWeeks(parseInt(e.target.value) || 18)}
-                      className="w-full mt-1 px-3 py-2 rounded-xl bg-white border border-slate-200 focus:border-primary-500 outline-none text-xs text-slate-700 glow-input"
+                      className="w-full mt-1 px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:border-primary dark:focus:border-sky-400 outline-none text-xs text-slate-900 dark:text-slate-100 glow-input"
                     />
                   </div>
                 </div>
@@ -550,13 +531,13 @@ export default function ClassroomsPage() {
                 <button
                   type="button"
                   onClick={() => setIsCreating(false)}
-                  className="px-3 py-1.5 rounded-lg bg-slate-100 border border-slate-200 hover:bg-slate-200 text-slate-600 text-xs font-semibold cursor-pointer"
+                  className="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-semibold cursor-pointer"
                 >
                   ยกเลิก
                 </button>
                 <button
                   type="submit"
-                  className="px-3 py-1.5 rounded-lg bg-primary-600 hover:bg-primary-500 text-white text-xs font-semibold cursor-pointer"
+                  className="px-3 py-1.5 rounded-lg bg-primary hover:bg-primary/90 text-white text-xs font-semibold cursor-pointer shadow-sm"
                 >
                   บันทึก
                 </button>
@@ -571,17 +552,17 @@ export default function ClassroomsPage() {
                 onClick={() => handleSelectClass(cls)}
                 className={`w-full p-4 rounded-2xl border text-left flex justify-between items-center cursor-pointer transition-all ${
                   currentClassroom?.id === cls.id
-                    ? "bg-primary-50 border-primary-200 text-primary-755 shadow-md shadow-primary-600/5"
-                    : "bg-slate-50 border-slate-200 text-slate-600 hover:border-slate-300"
+                    ? "bg-primary/10 dark:bg-sky-400/15 border-primary/40 dark:border-sky-400/40 text-primary dark:text-sky-300 shadow-sm"
+                    : "bg-slate-50/80 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700/80 text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-100/60 dark:hover:bg-slate-800"
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-xl ${currentClassroom?.id === cls.id ? "bg-primary-100 text-primary-700" : "bg-slate-200/50 text-slate-500"}`}>
+                  <div className={`p-2 rounded-xl ${currentClassroom?.id === cls.id ? "bg-primary/15 dark:bg-sky-400/20 text-primary dark:text-sky-300" : "bg-slate-200/60 dark:bg-slate-700/60 text-slate-500 dark:text-slate-400"}`}>
                     <BookOpen className="w-4 h-4" />
                   </div>
                   <div>
-                    <h4 className={`text-sm font-bold ${currentClassroom?.id === cls.id ? "text-primary-800" : "text-slate-700"}`}>{cls.name}</h4>
-                    <p className="text-[10px] text-slate-450 mt-1">{cls.weekly_schedule}</p>
+                    <h4 className={`text-sm font-bold ${currentClassroom?.id === cls.id ? "text-primary dark:text-sky-300" : "text-slate-800 dark:text-slate-200"}`}>{cls.name}</h4>
+                    <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">{cls.weekly_schedule}</p>
                   </div>
                 </div>
                 
@@ -591,7 +572,7 @@ export default function ClassroomsPage() {
                       e.stopPropagation();
                       handleDelete(cls.id);
                     }}
-                    className="p-2 rounded-xl text-slate-400 hover:bg-rose-50 hover:text-rose-500 transition-colors"
+                    className="p-2 rounded-xl text-slate-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 hover:text-rose-500 transition-colors"
                     title="ลบห้องเรียน"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
@@ -602,7 +583,7 @@ export default function ClassroomsPage() {
             ))}
             
             {classrooms.length === 0 && (
-              <div className="text-center py-8 text-slate-400 text-xs">
+              <div className="text-center py-8 text-slate-400 dark:text-slate-500 text-xs">
                 ยังไม่มีการสร้างห้องเรียน
               </div>
             )}
@@ -612,28 +593,28 @@ export default function ClassroomsPage() {
         {/* Right Side: Configuration editor */}
         <div className="lg:col-span-2 space-y-6">
           {currentClassroom ? (
-            <div className="glass-panel rounded-3xl p-6 bg-white border border-slate-200 space-y-6">
+            <div className="rounded-3xl p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-6 shadow-sm">
               
               {/* Part 1: Info */}
-              <div className="border-b border-slate-100 pb-6">
-                <h3 className="text-base font-bold text-slate-800 flex items-center gap-2 mb-4">
-                  <Calendar className="w-4.5 h-4.5 text-primary-600" />
+              <div className="border-b border-slate-100 dark:border-slate-800 pb-6">
+                <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2 mb-4">
+                  <Calendar className="w-4.5 h-4.5 text-primary dark:text-sky-400" />
                   <span>ข้อมูลวิชา: {currentClassroom.name}</span>
                 </h3>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
-                    <label className="text-[10px] uppercase font-bold text-slate-400">ชื่อห้องเรียน/วิชา</label>
+                    <label className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400">ชื่อห้องเรียน/วิชา</label>
                     <input
                       type="text"
                       value={editName}
                       onChange={(e) => setEditName(e.target.value)}
-                      className="w-full mt-1.5 px-4 py-2 rounded-xl bg-slate-50 border border-slate-200 focus:border-primary-500 outline-none text-sm text-slate-805 font-semibold glow-input"
+                      className="w-full mt-1.5 px-4 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:border-primary dark:focus:border-sky-400 outline-none text-sm text-slate-900 dark:text-slate-100 font-semibold glow-input"
                     />
                   </div>
 
                   <div>
-                    <label className="text-[10px] uppercase font-bold text-slate-400">วันเรียนในสัปดาห์ (เลือกได้หลายวัน)</label>
+                    <label className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400">วันเรียนในสัปดาห์ (เลือกได้หลายวัน)</label>
                     <div className="flex flex-wrap gap-1.5 mt-1.5">
                       {WEEKDAYS.map((day, idx) => {
                         const isSelected = editScheduleDays.includes(day);
@@ -652,8 +633,8 @@ export default function ClassroomsPage() {
                             }}
                             className={`w-8 h-8 flex items-center justify-center rounded-xl text-xs font-bold border transition-all cursor-pointer ${
                               isSelected
-                                ? "bg-primary-600 border-primary-600 text-white shadow-sm"
-                                : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100"
+                                ? "bg-primary dark:bg-sky-500 border-primary dark:border-sky-500 text-white shadow-sm"
+                                : "bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
                             }`}
                             title={day}
                           >
@@ -662,30 +643,30 @@ export default function ClassroomsPage() {
                         );
                       })}
                     </div>
-                    <span className="text-[10px] text-slate-400 mt-1 block">
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 block">
                       วันเรียน: {editScheduleDays.join(", ")}
                     </span>
                   </div>
 
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="text-[10px] uppercase font-bold text-slate-400">วันเปิดเทอม</label>
+                      <label className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400">วันเปิดเทอม</label>
                       <input
                         type="date"
                         value={editStartDate}
                         onChange={(e) => setEditStartDate(e.target.value)}
-                        className="w-full mt-1.5 px-4 py-2 rounded-xl bg-slate-50 border border-slate-200 focus:border-primary-500 outline-none text-xs text-slate-700 font-semibold glow-input"
+                        className="w-full mt-1.5 px-4 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:border-primary dark:focus:border-sky-400 outline-none text-xs text-slate-900 dark:text-slate-100 font-semibold glow-input cursor-pointer"
                       />
                     </div>
                     <div>
-                      <label className="text-[10px] uppercase font-bold text-slate-400">สัปดาห์ทั้งหมด</label>
+                      <label className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400">สัปดาห์ทั้งหมด</label>
                       <input
                         type="number"
                         min="1"
                         max="40"
                         value={editTotalWeeks}
                         onChange={(e) => setEditTotalWeeks(parseInt(e.target.value) || 18)}
-                        className="w-full mt-1.5 px-4 py-2 rounded-xl bg-slate-50 border border-slate-200 focus:border-primary-500 outline-none text-sm text-slate-700 font-semibold glow-input"
+                        className="w-full mt-1.5 px-4 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:border-primary dark:focus:border-sky-400 outline-none text-sm text-slate-900 dark:text-slate-100 font-semibold glow-input"
                       />
                     </div>
                   </div>
@@ -693,14 +674,14 @@ export default function ClassroomsPage() {
               </div>
 
               {/* Part 2: Weights & Categories Configurations */}
-              <div className="border-b border-slate-100 pb-6">
+              <div className="border-b border-slate-100 dark:border-slate-800 pb-6">
                 <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-4">
                   <div>
-                    <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
-                      <Sliders className="w-4.5 h-4.5 text-primary-600" />
+                    <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                      <Sliders className="w-4.5 h-4.5 text-primary dark:text-sky-400" />
                       <span>สัดส่วนและหมวดหมู่การประเมิน (Grade Categories & Weights)</span>
                     </h3>
-                    <p className="text-[11px] text-slate-500 mt-0.5">
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
                       ครูสามารถเพิ่ม ลบ หรือแก้ไขหมวดหมู่ได้ สัดส่วนของทุกหมวดหมู่รวมกันต้องเท่ากับ 100% เสมอ
                     </p>
                   </div>
@@ -709,8 +690,8 @@ export default function ClassroomsPage() {
                     <span
                       className={`text-xs font-bold px-3 py-1.5 rounded-xl border ${
                         categories.reduce((s, cat) => s + cat.weight, 0) === 100
-                          ? "bg-emerald-50 border-emerald-200 text-emerald-600"
-                          : "bg-rose-50 border-rose-200 text-rose-600"
+                          ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400"
+                          : "bg-rose-500/10 border-rose-500/30 text-rose-600 dark:text-rose-400"
                       }`}
                     >
                       รวมกัน: {categories.reduce((s, cat) => s + cat.weight, 0)}%
@@ -719,7 +700,7 @@ export default function ClassroomsPage() {
                     <button
                       type="button"
                       onClick={handleAddCategory}
-                      className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-700 text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-all active:scale-[0.97]"
+                      className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-all active:scale-[0.97]"
                     >
                       <Plus className="w-3.5 h-3.5" />
                       <span>เพิ่มหมวดหมู่</span>
@@ -733,11 +714,11 @@ export default function ClassroomsPage() {
                     return (
                       <div
                         key={cat.id}
-                        className="p-4 rounded-2xl bg-slate-50 border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center gap-4 hover:border-slate-300 transition-colors"
+                        className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 shadow-sm flex flex-col md:flex-row md:items-center gap-4 hover:border-slate-300 dark:hover:border-slate-600 transition-colors"
                       >
                         {/* Name Input */}
                         <div className="flex-1 min-w-[200px]">
-                          <label className="text-[10px] uppercase font-bold text-slate-400 block mb-1">ชื่อหมวดหมู่คะแนน</label>
+                          <label className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 block mb-1">ชื่อหมวดหมู่คะแนน</label>
                           <div className="relative">
                             <input
                               type="text"
@@ -746,8 +727,8 @@ export default function ClassroomsPage() {
                               onChange={(e) => handleUpdateCategoryName(cat.id, e.target.value)}
                               className={`w-full px-3 py-2 rounded-xl border outline-none text-xs font-semibold glow-input ${
                                 locked
-                                  ? "bg-slate-200/60 border-slate-300 text-slate-500 pl-8 cursor-not-allowed"
-                                  : "bg-white border-slate-200 text-slate-800 focus:border-primary-500"
+                                  ? "bg-slate-200/60 dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-500 dark:text-slate-400 pl-8 cursor-not-allowed"
+                                  : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:border-primary dark:focus:border-sky-400"
                               }`}
                               placeholder="เช่น ใบงาน, Quiz"
                             />
@@ -756,7 +737,7 @@ export default function ClassroomsPage() {
                             )}
                           </div>
                           {locked && (
-                            <span className="text-[10px] text-slate-400 font-medium mt-1 block">
+                            <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium mt-1 block">
                               🔒 ล็อคระบบ (จำเป็นต่อการคิดคะแนนจิตพิสัย/พฤติกรรมการเข้าเรียน)
                             </span>
                           )}
@@ -764,9 +745,9 @@ export default function ClassroomsPage() {
 
                         {/* Weight Slider + Value input */}
                         <div className="flex-1 min-w-[180px]">
-                          <div className="flex justify-between items-center text-[10px] uppercase font-bold text-slate-400 mb-1">
+                          <div className="flex justify-between items-center text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 mb-1">
                             <span>สัดส่วนน้ำหนักคะแนน</span>
-                            <span className="text-primary-600 font-bold text-xs">{cat.weight}%</span>
+                            <span className="text-primary dark:text-sky-400 font-bold text-xs">{cat.weight}%</span>
                           </div>
                           <div className="flex items-center gap-3">
                             <input
@@ -775,7 +756,7 @@ export default function ClassroomsPage() {
                               max="100"
                               value={cat.weight}
                               onChange={(e) => handleUpdateCategoryWeight(cat.id, parseInt(e.target.value) || 0)}
-                              className="flex-1 accent-primary-600 h-1.5 bg-slate-200 rounded-lg cursor-pointer"
+                              className="flex-1 accent-primary dark:accent-sky-400 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg cursor-pointer"
                             />
                             <input
                               type="number"
@@ -783,18 +764,18 @@ export default function ClassroomsPage() {
                               max="100"
                               value={cat.weight}
                               onChange={(e) => handleUpdateCategoryWeight(cat.id, Math.min(100, Math.max(0, parseInt(e.target.value) || 0)))}
-                              className="w-16 text-center px-2 py-1 bg-white border border-slate-200 focus:border-primary-500 outline-none rounded-lg text-xs font-bold glow-input"
+                              className="w-16 text-center px-2 py-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 focus:border-primary dark:focus:border-sky-400 outline-none rounded-lg text-xs font-bold text-slate-900 dark:text-slate-100 glow-input"
                             />
                           </div>
                         </div>
 
                         {/* Calculation Mode Dropdown */}
                         <div className="w-full md:w-[180px]">
-                          <label className="text-[10px] uppercase font-bold text-slate-400 block mb-1">วิธีการคำนวณคะแนนย่อย</label>
+                          <label className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 block mb-1">วิธีการคำนวณคะแนนย่อย</label>
                           <select
                             value={cat.mode}
                             onChange={(e) => handleUpdateCategoryMode(cat.id, e.target.value)}
-                            className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 focus:border-primary-500 outline-none text-xs font-semibold text-slate-700 glow-input"
+                            className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 focus:border-primary dark:focus:border-sky-400 outline-none text-xs font-semibold text-slate-800 dark:text-slate-200 glow-input cursor-pointer"
                           >
                             <option value="proportional">ตามสัดส่วนคะแนนเต็ม (Proportional)</option>
                             <option value="equal">เฉลี่ยน้ำหนักเท่ากันทุกงาน (Equal)</option>
@@ -810,8 +791,8 @@ export default function ClassroomsPage() {
                             onClick={() => handleDeleteCategory(cat.id)}
                             className={`p-2.5 rounded-xl border transition-all ${
                               locked
-                                ? "bg-slate-100 border-slate-200 text-slate-300 cursor-not-allowed opacity-50"
-                                : "bg-rose-50 border-rose-100 text-rose-500 hover:bg-rose-100 hover:border-rose-200 active:scale-[0.95]"
+                                ? "bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-300 dark:text-slate-600 cursor-not-allowed opacity-50"
+                                : "bg-rose-500/10 border-rose-500/20 text-rose-600 dark:text-rose-400 hover:bg-rose-500/20 active:scale-[0.95] cursor-pointer"
                             }`}
                             title={locked ? "ไม่สามารถลบหมวดหมู่ระบบได้" : "ลบหมวดหมู่"}
                           >
@@ -823,19 +804,19 @@ export default function ClassroomsPage() {
                   })}
 
                   {categories.length === 0 && (
-                    <div className="text-center py-6 text-slate-400 text-xs">
+                    <div className="text-center py-6 text-slate-400 dark:text-slate-500 text-xs">
                       กรุณากดปุ่ม &quot;เพิ่มหมวดหมู่&quot; เพื่อเริ่มต้นกำหนดน้ำหนักการคิดเกรด
                     </div>
                   )}
                 </div>
 
                 {/* Grade Calculation Method Settings */}
-                <div className="mt-6 p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-4">
+                <div className="mt-6 p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 space-y-4">
                   <div>
-                    <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    <h4 className="text-xs font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider mb-1">
                       โมเดลการคิดคะแนนรวมวิชา (Final Grade Calculation Model)
                     </h4>
-                    <p className="text-[11px] text-slate-500">
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
                       กำหนดวิธีคำนวณคะแนนรวมสะสมเมื่อสิ้นสุดภาคเรียน หรือการกระจายสัดส่วนคะแนนชิ้นงาน
                     </p>
                   </div>
@@ -845,19 +826,19 @@ export default function ClassroomsPage() {
                       <select
                         value={behaviorConfig.scoreCalculationMethod || "deductive"}
                         onChange={(e) => setBehaviorConfig({ ...behaviorConfig, scoreCalculationMethod: e.target.value as any })}
-                        className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 focus:border-primary-500 outline-none text-xs font-semibold text-slate-750 glow-input"
+                        className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 focus:border-primary dark:focus:border-sky-400 outline-none text-xs font-semibold text-slate-800 dark:text-slate-200 glow-input cursor-pointer"
                       >
                         <option value="deductive">คะแนนตั้งต้นเต็ม 100% แล้วหักออก (Deductive Weighting - แนะนำ)</option>
                         <option value="active_rescaling">คำนวณตามสัดส่วนงานที่มีจริง ณ ปัจจุบัน (Active Rescaling)</option>
                       </select>
                     </div>
-                    <p className="text-[10px] text-slate-450 leading-relaxed">
+                    <p className="text-[10px] text-slate-400 dark:text-slate-500 leading-relaxed">
                       {behaviorConfig.scoreCalculationMethod === "deductive" ? (
-                        <span className="text-emerald-600 font-medium">
+                        <span className="text-emerald-600 dark:text-emerald-400 font-medium">
                           💡 แนะนำ: หมวดที่ยังไม่สั่งงานจะเปรียบเสมือนได้เต็มชั่วคราว การขาดส่งงานแรกจะไม่ทำให้คะแนนรวมตกฮวบ (เช่น ขาดงานแรก 15% เกรดรวมลดเหลือ 85% แทนที่จะตกเหลือ 50% หรือ 0%)
                         </span>
                       ) : (
-                        <span className="text-amber-600 font-medium">
+                        <span className="text-amber-600 dark:text-amber-400 font-medium">
                           ⚠️ คำนวณตามงานที่มีจริง: หมวดที่ยังไม่สั่งงานจะถูกตัดออกและปรับส่วนที่เหลือขึ้นมาแทน (เช่น ถ้าเพิ่งสร้างแค่งานแรกแล้วขาดส่ง เกรดรวมจะตกเหลือ 50% หรือ 0% ทันที)
                         </span>
                       )}
@@ -866,12 +847,12 @@ export default function ClassroomsPage() {
                 </div>
 
                 {/* Behavioral Score Settings */}
-                <div className="mt-6 p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-4">
+                <div className="mt-6 p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 space-y-4">
                   <div>
-                    <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    <h4 className="text-xs font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider mb-1">
                       ระบบคำนวณคะแนนหมวดจิตพิสัย (Behavioral & Attendance Score Engine)
                     </h4>
-                    <p className="text-[11px] text-slate-500">
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
                       เลือกให้ระบบคำนวณคะแนนในหมวด &quot;จิตพิสัย&quot; อัตโนมัติจากการเช็คชื่อเข้าเรียนและการส่งงาน หรือสร้างชิ้นงานกรอกคะแนนสะสมเอง
                     </p>
                   </div>
@@ -880,7 +861,7 @@ export default function ClassroomsPage() {
                     <select
                       value={behaviorConfig.gradingMode || "auto"}
                       onChange={(e) => setBehaviorConfig({ ...behaviorConfig, gradingMode: e.target.value })}
-                      className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 focus:border-primary-500 outline-none text-xs font-semibold text-slate-750 glow-input"
+                      className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 focus:border-primary dark:focus:border-sky-400 outline-none text-xs font-semibold text-slate-800 dark:text-slate-200 glow-input cursor-pointer"
                     >
                       <option value="auto">คำนวณอัตโนมัติ (จากระบบเช็คชื่อและประวัติส่งงาน)</option>
                       <option value="manual">กรอกคะแนนเอง (สร้างชิ้นงานย่อยเองเหมือนหมวดหมู่อื่น)</option>
@@ -889,75 +870,75 @@ export default function ClassroomsPage() {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
                     <div>
-                      <label className="text-[10px] uppercase font-bold text-slate-400">จำนวนครั้งที่ขาดได้สูงสุด (Max Absences)</label>
+                      <label className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400">จำนวนครั้งที่ขาดได้สูงสุด (Max Absences)</label>
                       <input
                         type="number"
                         min="1"
                         max="100"
                         value={behaviorConfig.maxAbsencesAllowed ?? 4}
                         onChange={(e) => setBehaviorConfig({ ...behaviorConfig, maxAbsencesAllowed: parseInt(e.target.value) || 4 })}
-                        className="w-full mt-1 px-3 py-2 rounded-xl bg-white border border-slate-200 outline-none text-xs text-slate-800 glow-input font-bold"
+                        className="w-full mt-1 px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 outline-none text-xs text-slate-900 dark:text-slate-100 glow-input font-bold"
                       />
-                      <p className="text-[9px] text-slate-400 mt-1">ขาดเกินกำหนดจะขึ้นสถานะเสี่ยงวิกฤต (สีแดง) ทันที</p>
+                      <p className="text-[9px] text-slate-400 dark:text-slate-500 mt-1">ขาดเกินกำหนดจะขึ้นสถานะเสี่ยงวิกฤต (สีแดง) ทันที</p>
                     </div>
                     <div>
-                      <label className="text-[10px] uppercase font-bold text-slate-400">มาสายสะสมเท่ากับขาด 1 ครั้ง (Lates to Absence)</label>
+                      <label className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400">มาสายสะสมเท่ากับขาด 1 ครั้ง (Lates to Absence)</label>
                       <input
                         type="number"
                         min="1"
                         max="10"
                         value={behaviorConfig.latesPerAbsence ?? 3}
                         onChange={(e) => setBehaviorConfig({ ...behaviorConfig, latesPerAbsence: parseInt(e.target.value) || 3 })}
-                        className="w-full mt-1 px-3 py-2 rounded-xl bg-white border border-slate-200 outline-none text-xs text-slate-800 glow-input font-bold"
+                        className="w-full mt-1 px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 outline-none text-xs text-slate-900 dark:text-slate-100 glow-input font-bold"
                       />
-                      <p className="text-[9px] text-slate-400 mt-1">เมื่อสายครบทุกๆ N ครั้ง จะแปลงเป็นวันขาดเรียน 1 วัน</p>
+                      <p className="text-[9px] text-slate-400 dark:text-slate-500 mt-1">เมื่อสายครบทุกๆ N ครั้ง จะแปลงเป็นวันขาดเรียน 1 วัน</p>
                     </div>
                   </div>
 
                   {(behaviorConfig.gradingMode || "auto") === "auto" && (
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-4 border-t border-slate-200/60">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-4 border-t border-slate-200/60 dark:border-slate-700/60">
                       <div>
-                        <label className="text-[10px] uppercase font-bold text-slate-400">หักขาดเรียน (ครั้งละ)</label>
+                        <label className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400">หักขาดเรียน (ครั้งละ)</label>
                         <input
                           type="number"
                           min="0"
                           max="20"
                           value={behaviorConfig.deductAbsent}
                           onChange={(e) => setBehaviorConfig({ ...behaviorConfig, deductAbsent: parseInt(e.target.value) || 0 })}
-                          className="w-full mt-1 px-3 py-1.5 rounded-xl bg-white border border-slate-200 outline-none text-xs text-center text-slate-800 glow-input font-bold"
+                          className="w-full mt-1 px-3 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 outline-none text-xs text-center text-slate-900 dark:text-slate-100 glow-input font-bold"
                         />
                       </div>
                       <div>
-                        <label className="text-[10px] uppercase font-bold text-slate-400">หักมาสาย (ครั้งละ)</label>
+                        <label className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400">หักมาสาย (ครั้งละ)</label>
                         <input
                           type="number"
                           min="0"
                           max="20"
                           value={behaviorConfig.deductLate}
                           onChange={(e) => setBehaviorConfig({ ...behaviorConfig, deductLate: parseInt(e.target.value) || 0 })}
-                          className="w-full mt-1 px-3 py-1.5 rounded-xl bg-white border border-slate-200 outline-none text-xs text-center text-slate-800 glow-input font-bold"
+                          className="w-full mt-1 px-3 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 outline-none text-xs text-center text-slate-900 dark:text-slate-100 glow-input font-bold"
                         />
                       </div>
                       <div>
-                        <label className="text-[10px] uppercase font-bold text-slate-400">หักขาดส่งงาน (ชิ้นละ)</label>
+                        <label className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400">หักขาดส่งงาน (ชิ้นละ)</label>
                         <input
                           type="number"
                           min="0"
                           max="20"
                           value={behaviorConfig.deductMissing}
                           onChange={(e) => setBehaviorConfig({ ...behaviorConfig, deductMissing: parseInt(e.target.value) || 0 })}
-                          className="w-full mt-1 px-3 py-1.5 rounded-xl bg-white border border-slate-200 outline-none text-xs text-center text-slate-800 glow-input font-bold"
+                          className="w-full mt-1 px-3 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 outline-none text-xs text-center text-slate-900 dark:text-slate-100 glow-input font-bold"
                         />
                       </div>
                       <div>
-                        <label className="text-[10px] uppercase font-bold text-slate-400">หักส่งงานช้า (ชิ้นละ)</label>
+                        <label className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400">หักส่งงานช้า (ชิ้นละ)</label>
                         <input
                           type="number"
                           min="0"
                           max="20"
                           value={behaviorConfig.deductLateSubmission}
                           onChange={(e) => setBehaviorConfig({ ...behaviorConfig, deductLateSubmission: parseInt(e.target.value) || 0 })}
-                          className="w-full mt-1 px-3 py-1.5 rounded-xl bg-white border border-slate-200 outline-none text-xs text-center text-slate-800 glow-input font-bold"
+                          className="w-full mt-1 px-3 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 outline-none text-xs text-center text-slate-900 dark:text-slate-100 glow-input font-bold"
                         />
                       </div>
                     </div>
@@ -967,76 +948,76 @@ export default function ClassroomsPage() {
 
               {/* Part 3: Thresholds configurations */}
               <div>
-                <h3 className="text-base font-bold text-slate-800 flex items-center gap-2 mb-4">
-                  <Settings className="w-4.5 h-4.5 text-primary-600" />
+                <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2 mb-4">
+                  <Settings className="w-4.5 h-4.5 text-primary dark:text-sky-400" />
                   <span>เกณฑ์การตัดเกรด (Grade Thresholds)</span>
                 </h3>
 
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                   <div>
-                    <label className="text-[10px] uppercase font-bold text-slate-400">เกรด 4.0 (คะแนนขึ้นไป)</label>
+                    <label className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400">เกรด 4.0 (คะแนนขึ้นไป)</label>
                     <input
                       type="number"
                       value={thresholds.g4}
                       onChange={(e) => setThresholds({ ...thresholds, g4: parseInt(e.target.value) || 0 })}
-                      className="w-full mt-1.5 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 outline-none text-sm text-center text-slate-800 glow-input"
+                      className="w-full mt-1.5 px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none text-sm text-center text-slate-900 dark:text-slate-100 glow-input font-semibold"
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] uppercase font-bold text-slate-400">เกรด 3.5 (คะแนนขึ้นไป)</label>
+                    <label className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400">เกรด 3.5 (คะแนนขึ้นไป)</label>
                     <input
                       type="number"
                       value={thresholds.g35}
                       onChange={(e) => setThresholds({ ...thresholds, g35: parseInt(e.target.value) || 0 })}
-                      className="w-full mt-1.5 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 outline-none text-sm text-center text-slate-800 glow-input"
+                      className="w-full mt-1.5 px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none text-sm text-center text-slate-900 dark:text-slate-100 glow-input font-semibold"
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] uppercase font-bold text-slate-400">เกรด 3.0 (คะแนนขึ้นไป)</label>
+                    <label className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400">เกรด 3.0 (คะแนนขึ้นไป)</label>
                     <input
                       type="number"
                       value={thresholds.g3}
                       onChange={(e) => setThresholds({ ...thresholds, g3: parseInt(e.target.value) || 0 })}
-                      className="w-full mt-1.5 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 outline-none text-sm text-center text-slate-800 glow-input"
+                      className="w-full mt-1.5 px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none text-sm text-center text-slate-900 dark:text-slate-100 glow-input font-semibold"
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] uppercase font-bold text-slate-400">เกรด 2.5 (คะแนนขึ้นไป)</label>
+                    <label className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400">เกรด 2.5 (คะแนนขึ้นไป)</label>
                     <input
                       type="number"
                       value={thresholds.g25}
                       onChange={(e) => setThresholds({ ...thresholds, g25: parseInt(e.target.value) || 0 })}
-                      className="w-full mt-1.5 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 outline-none text-sm text-center text-slate-800 glow-input"
+                      className="w-full mt-1.5 px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none text-sm text-center text-slate-900 dark:text-slate-100 glow-input font-semibold"
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] uppercase font-bold text-slate-400">เกรด 2.0 (คะแนนขึ้นไป)</label>
+                    <label className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400">เกรด 2.0 (คะแนนขึ้นไป)</label>
                     <input
                       type="number"
                       value={thresholds.g2}
                       onChange={(e) => setThresholds({ ...thresholds, g2: parseInt(e.target.value) || 0 })}
-                      className="w-full mt-1.5 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 outline-none text-sm text-center text-slate-800 glow-input"
+                      className="w-full mt-1.5 px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none text-sm text-center text-slate-900 dark:text-slate-100 glow-input font-semibold"
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] uppercase font-bold text-slate-400">เกรด 1.5 (คะแนนขึ้นไป)</label>
+                    <label className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400">เกรด 1.5 (คะแนนขึ้นไป)</label>
                     <input
                       type="number"
                       value={thresholds.g15}
                       onChange={(e) => setThresholds({ ...thresholds, g15: parseInt(e.target.value) || 0 })}
-                      className="w-full mt-1.5 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 outline-none text-sm text-center text-slate-800 glow-input"
+                      className="w-full mt-1.5 px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none text-sm text-center text-slate-900 dark:text-slate-100 glow-input font-semibold"
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] uppercase font-bold text-slate-400">เกรด 1.0 (คะแนนขึ้นไป)</label>
+                    <label className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400">เกรด 1.0 (คะแนนขึ้นไป)</label>
                     <input
                       type="number"
                       value={thresholds.g1}
                       onChange={(e) => setThresholds({ ...thresholds, g1: parseInt(e.target.value) || 0 })}
-                      className="w-full mt-1.5 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 outline-none text-sm text-center text-slate-800 glow-input"
+                      className="w-full mt-1.5 px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none text-sm text-center text-slate-900 dark:text-slate-100 glow-input font-semibold"
                     />
                   </div>
-                  <div className="flex flex-col justify-end text-center p-2 rounded-xl bg-rose-50 border border-rose-100 text-rose-600">
+                  <div className="flex flex-col justify-end text-center p-2 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400">
                     <span className="text-[10px] uppercase font-bold text-rose-500">เกรด 0 (มีคะแนนต่ำกว่า)</span>
                     <span className="text-sm font-black mt-1.5">&lt; {thresholds.g1} คะแนน</span>
                   </div>
@@ -1044,70 +1025,70 @@ export default function ClassroomsPage() {
               </div>
 
               {/* Part 4: Cleanup & Storage Management Section */}
-              <div className="border-t border-slate-100 pt-6">
-                <h3 className="text-base font-bold text-slate-800 flex items-center gap-2 mb-4">
+              <div className="border-t border-slate-100 dark:border-slate-800 pt-6">
+                <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2 mb-4">
                   <AlertTriangle className="w-4.5 h-4.5 text-rose-500" />
                   <span>ล้างข้อมูลภาคเรียน / จัดการพื้นที่ระบบ (Semester Cleanup & Storage Management)</span>
                 </h3>
 
-                <div className="p-4 rounded-2xl bg-rose-50/50 border border-rose-100 text-slate-700 space-y-4">
+                <div className="p-4 rounded-2xl bg-rose-500/5 dark:bg-rose-950/20 border border-rose-500/20 text-slate-700 dark:text-slate-300 space-y-4">
                   <div className="flex items-start gap-2.5">
                     <AlertTriangle className="w-5 h-5 text-rose-500 shrink-0 mt-0.5" />
                     <div>
-                      <p className="text-xs font-bold text-rose-700">คำเตือนระบบความปลอดภัย</p>
-                      <p className="text-[11px] text-rose-600 mt-0.5">
+                      <p className="text-xs font-bold text-rose-600 dark:text-rose-400">คำเตือนระบบความปลอดภัย</p>
+                      <p className="text-[11px] text-rose-600/90 dark:text-rose-400/90 mt-0.5">
                         การดำเนินการล้างข้อมูลนี้จะลบข้อมูลออกอย่างถาวรตามที่ระบุ เพื่อล้างสถิติสำหรับการเริ่มภาคเรียนใหม่ หรือช่วยเพิ่มพื้นที่จัดเก็บข้อมูลในแผนบริการฟรีของระบบคลาวด์ (โดยเฉพาะการประหยัดพื้นที่จากรายงาน AI)
                       </p>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    <label className="flex items-center gap-2.5 p-3 rounded-xl bg-white border border-slate-200 hover:border-slate-300 transition-colors cursor-pointer select-none">
+                    <label className="flex items-center gap-2.5 p-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 transition-colors cursor-pointer select-none">
                       <input
                         type="checkbox"
                         checked={cleanAttendance}
                         onChange={(e) => setCleanAttendance(e.target.checked)}
-                        className="w-4 h-4 rounded text-primary-600 focus:ring-primary-500 cursor-pointer"
+                        className="w-4 h-4 rounded text-primary focus:ring-primary cursor-pointer"
                       />
                       <div>
-                        <p className="text-xs font-bold text-slate-800">ล้างเวลาเรียน</p>
-                        <p className="text-[9px] text-slate-400">ลบประวัติการเช็คชื่อทั้งหมด</p>
+                        <p className="text-xs font-bold text-slate-800 dark:text-slate-200">ล้างเวลาเรียน</p>
+                        <p className="text-[9px] text-slate-400 dark:text-slate-500">ลบประวัติการเช็คชื่อทั้งหมด</p>
                       </div>
                     </label>
 
-                    <label className="flex items-center gap-2.5 p-3 rounded-xl bg-white border border-slate-200 hover:border-slate-300 transition-colors cursor-pointer select-none">
+                    <label className="flex items-center gap-2.5 p-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 transition-colors cursor-pointer select-none">
                       <input
                         type="checkbox"
                         checked={cleanScores}
                         onChange={(e) => setCleanScores(e.target.checked)}
-                        className="w-4 h-4 rounded text-primary-600 focus:ring-primary-500 cursor-pointer"
+                        className="w-4 h-4 rounded text-primary focus:ring-primary cursor-pointer"
                       />
                       <div>
-                        <p className="text-xs font-bold text-slate-800">ล้างคะแนนสะสม</p>
-                        <p className="text-[9px] text-slate-400">ลบคะแนนชิ้นงาน/จิตพิสัยทั้งหมด</p>
+                        <p className="text-xs font-bold text-slate-800 dark:text-slate-200">ล้างคะแนนสะสม</p>
+                        <p className="text-[9px] text-slate-400 dark:text-slate-500">ลบคะแนนชิ้นงาน/จิตพิสัยทั้งหมด</p>
                       </div>
                     </label>
 
-                    <label className="flex items-center gap-2.5 p-3 rounded-xl bg-white border border-slate-200 hover:border-slate-300 transition-colors cursor-pointer select-none">
+                    <label className="flex items-center gap-2.5 p-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 transition-colors cursor-pointer select-none">
                       <input
                         type="checkbox"
                         checked={cleanReports}
                         onChange={(e) => setCleanReports(e.target.checked)}
-                        className="w-4 h-4 rounded text-primary-600 focus:ring-primary-500 cursor-pointer"
+                        className="w-4 h-4 rounded text-primary focus:ring-primary cursor-pointer"
                       />
                       <div>
-                        <p className="text-xs font-bold text-slate-800">ล้างรายงาน AI</p>
-                        <p className="text-[9px] text-slate-400">ลบรายงานการวิเคราะห์สะสม</p>
+                        <p className="text-xs font-bold text-slate-800 dark:text-slate-200">ล้างรายงาน AI</p>
+                        <p className="text-[9px] text-slate-400 dark:text-slate-500">ลบรายงานการวิเคราะห์สะสม</p>
                       </div>
                     </label>
                   </div>
 
                   {showCleanupConfirm ? (
-                    <div className="p-4 rounded-xl bg-white border border-rose-200 space-y-3">
+                    <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-rose-500/30 space-y-3">
                       <div>
-                        <p className="text-xs font-bold text-rose-700">ยืนยันการล้างข้อมูลอย่างถาวร</p>
-                        <p className="text-[10px] text-slate-500">
-                          กรุณาพิมพ์ชื่อห้องเรียน <span className="font-bold text-slate-800">&quot;{currentClassroom.name}&quot;</span> ด้านล่าง เพื่อความปลอดภัยก่อนเริ่มดำเนินการ:
+                        <p className="text-xs font-bold text-rose-600 dark:text-rose-400">ยืนยันการล้างข้อมูลอย่างถาวร</p>
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                          กรุณาพิมพ์ชื่อห้องเรียน <span className="font-bold text-slate-800 dark:text-slate-200">&quot;{currentClassroom.name}&quot;</span> ด้านล่าง เพื่อความปลอดภัยก่อนเริ่มดำเนินการ:
                         </p>
                       </div>
                       <div className="flex gap-2">
@@ -1116,7 +1097,7 @@ export default function ClassroomsPage() {
                           placeholder="พิมพ์ชื่อห้องเรียนให้ตรง..."
                           value={cleanupConfirmText}
                           onChange={(e) => setCleanupConfirmText(e.target.value)}
-                          className="flex-1 px-3 py-1.5 rounded-lg border border-slate-200 focus:border-rose-500 focus:ring-1 focus:ring-rose-500/20 text-xs outline-none"
+                          className="flex-1 px-3 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:border-rose-500 focus:ring-1 focus:ring-rose-500/20 text-xs text-slate-900 dark:text-slate-100 outline-none"
                         />
                         <button
                           type="button"
@@ -1124,7 +1105,7 @@ export default function ClassroomsPage() {
                             setShowCleanupConfirm(false);
                             setCleanupConfirmText("");
                           }}
-                          className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-lg cursor-pointer transition-colors"
+                          className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-semibold rounded-lg cursor-pointer transition-colors"
                         >
                           ยกเลิก
                         </button>
@@ -1144,13 +1125,13 @@ export default function ClassroomsPage() {
                         type="button"
                         onClick={() => {
                           if (!cleanAttendance && !cleanScores && !cleanReports) {
-                            setNotification({ type: "error", msg: "กรุณาเลือกข้อมูลอย่างน้อย 1 รายการเพื่อล้างข้อมูล" });
+                            toastError("กรุณาเลือกข้อมูลอย่างน้อย 1 รายการเพื่อล้างข้อมูล");
                             return;
                           }
                           setShowCleanupConfirm(true);
                           setCleanupConfirmText("");
                         }}
-                        className="px-4 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-600 text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-all active:scale-[0.98]"
+                        className="px-4 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-600 dark:text-rose-400 text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-all active:scale-[0.98]"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                         <span>เริ่มล้างข้อมูลที่เลือก</span>
@@ -1161,12 +1142,12 @@ export default function ClassroomsPage() {
               </div>
 
               {/* Submit Buttons */}
-              <div className="flex justify-end gap-3 pt-6 border-t border-slate-200">
+              <div className="flex justify-end gap-3 pt-6 border-t border-slate-200 dark:border-slate-800">
                 <button
                   type="button"
                   onClick={handleSaveConfig}
                   disabled={saving}
-                  className="px-5 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-500 text-white font-semibold text-sm flex items-center gap-2 transition-all active:scale-[0.98] cursor-pointer"
+                  className="px-5 py-2.5 rounded-xl bg-primary hover:bg-primary/90 text-white font-semibold text-sm flex items-center gap-2 transition-all active:scale-[0.98] cursor-pointer shadow-md disabled:opacity-50"
                 >
                   <Save className="w-4 h-4" />
                   <span>{saving ? "กำลังบันทึก..." : "บันทึกการปรับแต่งทั้งหมด"}</span>
@@ -1175,10 +1156,10 @@ export default function ClassroomsPage() {
 
             </div>
           ) : (
-            <div className="glass-panel rounded-3xl p-12 border-slate-200 text-center flex flex-col items-center justify-center bg-white">
-              <AlertCircle className="w-12 h-12 text-slate-400 mb-3" />
-              <h4 className="text-base font-bold text-slate-600">ยังไม่ได้เลือกวิชา</h4>
-              <p className="text-slate-500 text-xs mt-1 max-w-sm">
+            <div className="rounded-3xl p-12 border border-slate-200 dark:border-slate-800 text-center flex flex-col items-center justify-center bg-white dark:bg-slate-900 shadow-sm">
+              <AlertCircle className="w-12 h-12 text-slate-400 dark:text-slate-600 mb-3" />
+              <h4 className="text-base font-bold text-slate-800 dark:text-slate-200">ยังไม่ได้เลือกวิชา</h4>
+              <p className="text-slate-500 dark:text-slate-400 text-xs mt-1 max-w-sm">
                 กรุณาคลิกเลือกห้องเรียนในรายการด้านซ้าย หรือคลิกปุ่ม &quot;สร้างห้องเรียน&quot; เพื่อเริ่มต้นกำหนดสัดส่วนคะแนนสะสมและวันเรียน
               </p>
             </div>

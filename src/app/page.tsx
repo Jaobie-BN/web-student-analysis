@@ -55,47 +55,46 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center bg-[#f8fafc] text-slate-800 overflow-hidden px-4">
+    <div className="relative min-h-screen flex items-center justify-center bg-slate-50 dark:bg-[#090d16] text-slate-800 dark:text-slate-100 overflow-hidden px-4 transition-colors duration-200">
       {/* Decorative Blur Orbs */}
-      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-primary-200/30 blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-sky-200/20 blur-[120px] pointer-events-none" />
+      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-primary-200/30 dark:bg-primary-900/20 blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-sky-200/20 dark:bg-sky-900/10 blur-[120px] pointer-events-none" />
 
       <div className="w-full max-w-md z-10">
         {/* App Title Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center p-3 rounded-2xl bg-primary-50 border border-primary-200 text-primary-600 mb-4 animate-bounce">
+          <div className="inline-flex items-center justify-center p-3 rounded-2xl bg-primary/10 dark:bg-sky-400/10 border border-primary/20 dark:border-sky-400/20 text-primary dark:text-sky-400 mb-4 animate-bounce">
             <BookOpen className="w-8 h-8" />
           </div>
-          <h1 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-primary-700 via-slate-800 to-primary-600 bg-clip-text text-transparent">
+          <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100">
             Student Analytics
           </h1>
-          <p className="text-slate-500 text-sm mt-2">
+          <p className="text-slate-500 dark:text-slate-400 text-sm mt-2">
             Classroom Management & AI-Powered Grading Suite
           </p>
         </div>
 
         {/* Auth Card */}
-        <div className="glass-panel rounded-3xl p-8 border-slate-200 bg-white shadow-xl">
-          <h2 className="text-xl font-bold text-center mb-6 text-slate-800">
+        <div className="rounded-3xl p-8 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xl">
+          <h2 className="text-xl font-bold text-center mb-6 text-slate-800 dark:text-slate-100">
             {isSignUp ? "สร้างบัญชีผู้ใช้ใหม่ (สำหรับครู)" : "เข้าสู่ระบบ (Teacher Portal)"}
           </h2>
 
-
           {errorMsg && (
-            <div className="mb-4 p-3 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-500 text-xs font-medium">
+            <div className="mb-4 p-3 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-600 dark:text-rose-400 text-xs font-medium">
               {errorMsg}
             </div>
           )}
 
           {successMsg && (
-            <div className="mb-4 p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 text-xs font-medium">
+            <div className="mb-4 p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-xs font-medium">
               {successMsg}
             </div>
           )}
 
           <form onSubmit={handleAuth} className="space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+              <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
                 อีเมล (Email)
               </label>
               <input
@@ -104,12 +103,12 @@ export default function AuthPage() {
                 placeholder="teacher@school.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:border-primary-500 focus:ring-1 focus:ring-primary-500/20 text-slate-850 outline-none transition-all placeholder:text-slate-400 text-sm glow-input"
+                className="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:border-primary-500 focus:ring-1 focus:ring-primary-500/20 text-slate-800 dark:text-slate-100 outline-none transition-all placeholder:text-slate-400 text-sm glow-input"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+              <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
                 รหัสผ่าน (Password)
               </label>
               <input
@@ -118,7 +117,7 @@ export default function AuthPage() {
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:border-primary-500 focus:ring-1 focus:ring-primary-500/20 text-slate-850 outline-none transition-all placeholder:text-slate-400 text-sm glow-input"
+                className="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:border-primary-500 focus:ring-1 focus:ring-primary-500/20 text-slate-800 dark:text-slate-100 outline-none transition-all placeholder:text-slate-400 text-sm glow-input"
               />
             </div>
 
@@ -144,14 +143,14 @@ export default function AuthPage() {
           </form>
 
           {/* Toggle login/signup */}
-          <div className="mt-6 text-center text-xs text-slate-500">
+          <div className="mt-6 text-center text-xs text-slate-500 dark:text-slate-400">
             {isSignUp ? (
               <p>
                 มีบัญชีอยู่แล้ว?{" "}
                 <button
                   type="button"
                   onClick={() => setIsSignUp(false)}
-                  className="text-primary-600 hover:underline font-semibold"
+                  className="text-primary-600 dark:text-sky-400 hover:underline font-semibold cursor-pointer"
                 >
                   เข้าสู่ระบบที่นี่
                 </button>
@@ -162,7 +161,7 @@ export default function AuthPage() {
                 <button
                   type="button"
                   onClick={() => setIsSignUp(true)}
-                  className="text-primary-600 hover:underline font-semibold"
+                  className="text-primary-600 dark:text-sky-400 hover:underline font-semibold cursor-pointer"
                 >
                   สมัครสมาชิกใหม่
                 </button>
@@ -173,7 +172,7 @@ export default function AuthPage() {
         </div>
 
         {/* Footer info */}
-        <p className="text-center text-slate-400 text-xs mt-6">
+        <p className="text-center text-slate-400 dark:text-slate-500 text-xs mt-6">
           © {new Date().getFullYear()} Student Analytics System. พัฒนาขึ้นสำหรับคุณครู
         </p>
       </div>

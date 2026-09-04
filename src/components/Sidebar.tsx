@@ -9,7 +9,7 @@ import {
   Users,
   CalendarCheck,
   Award,
-  Sparkles,
+  TrendingUp,
   Download,
   Settings,
   AlertCircle,
@@ -60,9 +60,9 @@ export default function Sidebar() {
       requiresClass: true,
     },
     {
-      name: "รายงาน AI (AI Insights)",
+      name: "วิเคราะห์รายบุคคล (Analytics)",
       path: "/ai-insights",
-      icon: Sparkles,
+      icon: TrendingUp,
       requiresClass: true,
     },
     {
@@ -81,8 +81,8 @@ export default function Sidebar() {
       <aside
         onMouseEnter={() => setIsCollapsed(false)}
         onMouseLeave={() => setIsCollapsed(true)}
-        className={`sidebar-transition w-full lg:absolute lg:left-0 lg:top-0 lg:h-full border-r border-slate-200 bg-surface-container-lowest p-4 flex flex-col justify-between no-print shadow-sm z-[35] ${
-          currentCollapsed ? "lg:w-20" : "lg:w-72 lg:shadow-md"
+        className={`sidebar-transition w-full lg:absolute lg:left-0 lg:top-0 lg:h-full border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0c1222] p-4 flex flex-col justify-between no-print shadow-sm z-[35] transition-colors duration-200 ${
+          currentCollapsed ? "lg:w-20" : "lg:w-72 lg:shadow-xl"
         }`}
       >
         <div className="space-y-6">
@@ -96,13 +96,13 @@ export default function Sidebar() {
                 return (
                   <li key={item.path} className="w-full min-w-0">
                     <div
-                      className={`flex items-center px-4 py-3 rounded-lg text-outline/45 cursor-not-allowed text-sm font-medium min-w-0 ${
+                      className={`flex items-center px-4 py-3 rounded-xl text-outline/45 dark:text-slate-600 cursor-not-allowed text-sm font-medium min-w-0 ${
                         currentCollapsed ? "lg:justify-center lg:px-2 lg:gap-0" : "gap-3"
                       }`}
                       title={`กรุณาเลือกห้องเรียนก่อนเข้าสู่เมนู ${item.name}`}
                     >
                       <Icon className="w-4 h-4 shrink-0" />
-                      <span className={`transition-all duration-300 whitespace-nowrap text-label-md font-label-md ${currentCollapsed ? "lg:w-0 lg:opacity-0 lg:pointer-events-none" : "lg:w-auto lg:opacity-100"}`}>
+                      <span className={`transition-all duration-300 whitespace-nowrap text-xs md:text-sm ${currentCollapsed ? "lg:w-0 lg:opacity-0 lg:pointer-events-none" : "lg:w-auto lg:opacity-100"}`}>
                         {item.name}
                       </span>
                     </div>
@@ -115,19 +115,19 @@ export default function Sidebar() {
                   <Link
                     href={item.path}
                     title={item.name}
-                    className={`relative flex items-center px-4 py-3 rounded-lg text-sm transition-all active:scale-[0.98] min-w-0 ${
+                    className={`relative flex items-center px-4 py-3 rounded-xl text-sm transition-all active:scale-[0.98] min-w-0 ${
                       currentCollapsed ? "lg:justify-center lg:px-2 lg:gap-0" : "gap-3"
                     } ${
                       active
-                        ? "text-primary font-bold bg-secondary-container/10"
-                        : "text-on-surface-variant hover:text-primary hover:bg-surface-container transition-colors"
+                        ? "text-primary dark:text-sky-400 font-bold bg-primary/10 dark:bg-sky-400/10 shadow-sm"
+                        : "text-slate-700 dark:text-slate-300 hover:text-primary dark:hover:text-sky-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 transition-colors"
                     }`}
                   >
                     {active && (
-                      <span className="absolute left-0 top-2 bottom-2 w-1 bg-primary rounded-r-md" />
+                      <span className="absolute left-0 top-2 bottom-2 w-1 bg-primary dark:bg-sky-400 rounded-r-md" />
                     )}
                     <Icon className="w-4 h-4 shrink-0" />
-                    <span className={`transition-all duration-300 whitespace-nowrap text-label-md font-label-md ${currentCollapsed ? "lg:w-0 lg:opacity-0 lg:pointer-events-none" : "lg:w-auto lg:opacity-100"}`}>
+                    <span className={`transition-all duration-300 whitespace-nowrap text-xs md:text-sm ${currentCollapsed ? "lg:w-0 lg:opacity-0 lg:pointer-events-none" : "lg:w-auto lg:opacity-100"}`}>
                       {item.name}
                     </span>
                   </Link>
@@ -138,35 +138,35 @@ export default function Sidebar() {
         </div>
 
         {/* Footer Profile & Logout Button */}
-        <div className="space-y-4 pt-4 border-t border-slate-200">
+        <div className="space-y-4 pt-4 border-t border-slate-200 dark:border-slate-800">
           {/* Profile Card at bottom (Stitch layout style) */}
-          <div className={`flex items-center rounded-lg transition-colors ${currentCollapsed ? "justify-center p-0 lg:gap-0" : "px-2 py-1.5 gap-3"}`}>
-            <div className="w-9 h-9 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-sm shrink-0 border border-primary/20">
+          <div className={`flex items-center rounded-xl transition-colors ${currentCollapsed ? "justify-center p-0 lg:gap-0" : "px-2 py-1.5 gap-3"}`}>
+            <div className="w-9 h-9 rounded-full bg-primary/10 dark:bg-sky-400/10 text-primary dark:text-sky-400 flex items-center justify-center font-bold text-sm shrink-0 border border-primary/20 dark:border-sky-400/20">
               {user?.email ? user.email.charAt(0).toUpperCase() : "T"}
             </div>
             <div className={`flex flex-col min-w-0 transition-all duration-300 ${currentCollapsed ? "lg:w-0 lg:opacity-0 lg:pointer-events-none" : "lg:w-auto lg:opacity-100"}`}>
-              <span className="text-sm font-bold text-on-surface">
+              <span className="text-sm font-bold text-slate-800 dark:text-slate-100">
                 ครู {user?.email ? user.email.split('@')[0] : "ผู้สอน"}
               </span>
-              <span className="text-[11px] text-on-surface-variant">
+              <span className="text-[11px] text-slate-500 dark:text-slate-400">
                 {currentClassroom ? `วิชา ${currentClassroom.name}` : "ครูประจำการ"}
               </span>
             </div>
           </div>
 
-          {/* Dedicated Logout Button (Replaces the manual collapse button) */}
+          {/* Dedicated Logout Button */}
           <button
             onClick={logout}
-            className={`hidden lg:flex items-center justify-center w-full py-2.5 rounded-lg bg-surface-container-low hover:bg-critical-rose/10 hover:border-critical-rose/20 border border-slate-200 text-outline hover:text-critical-rose transition-all active:scale-[0.98] cursor-pointer text-sm font-semibold ${
+            className={`hidden lg:flex items-center justify-center w-full py-2.5 rounded-xl bg-surface-container-low dark:bg-slate-800/60 hover:bg-rose-50 dark:hover:bg-rose-950/40 hover:border-rose-200 dark:hover:border-rose-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 transition-all active:scale-[0.98] cursor-pointer text-sm font-semibold ${
               currentCollapsed ? "lg:px-2 lg:gap-0 lg:justify-center" : "gap-2"
             }`}
             title="ออกจากระบบ"
           >
             <LogOut className="w-4 h-4 shrink-0" />
-            <span className={`whitespace-nowrap transition-all duration-300 text-label-md font-label-md ${currentCollapsed ? "lg:w-0 lg:opacity-0 lg:pointer-events-none" : "lg:w-auto lg:opacity-100"}`}>ออกจากระบบ</span>
+            <span className={`whitespace-nowrap transition-all duration-300 text-xs md:text-sm ${currentCollapsed ? "lg:w-0 lg:opacity-0 lg:pointer-events-none" : "lg:w-auto lg:opacity-100"}`}>ออกจากระบบ</span>
           </button>
 
-        <div className={`text-[10px] text-outline text-center transition-all ${currentCollapsed ? "lg:hidden" : "block"}`}>
+        <div className={`text-[10px] text-slate-400 dark:text-slate-500 text-center transition-all ${currentCollapsed ? "lg:hidden" : "block"}`}>
           Student Analytics Platform v1.2
         </div>
       </div>

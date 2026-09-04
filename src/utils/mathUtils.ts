@@ -448,3 +448,153 @@ export function calculateFinalGrade(
     componentScores, // breakdown of each component score out of 100%
   };
 }
+
+export interface SmartReport {
+  summary: string;
+  strengths: string;
+  weaknesses: string;
+  recommendations: string[];
+}
+
+export interface StudentAnalyticsInput {
+  studentCode: string;
+  studentName: string;
+  attendanceRate: number;
+  totalAbsences: number;
+  finalPercentage: number;
+  grade: string;
+  risk: "green" | "yellow" | "red";
+  componentScores: { [key: string]: number };
+  lateCount: number;
+  missingCount: number;
+  notes?: string;
+  classroomName?: string;
+}
+
+/**
+ * Smart Rule-Based Diagnostics Engine (Option 2)
+ * Generates instant, comprehensive academic and behavioral diagnostics without external LLM dependencies.
+ */
+export function generateSmartStudentReport(data: StudentAnalyticsInput): SmartReport {
+  const {
+    studentCode,
+    studentName,
+    attendanceRate,
+    totalAbsences,
+    finalPercentage,
+    grade,
+    risk,
+    componentScores,
+    lateCount,
+    missingCount,
+    notes,
+  } = data;
+
+  // 1. Summary Generation
+  let summary = "";
+  if (risk === "red") {
+    summary = `นักเรียนรหัส ${studentCode} (${studentName}) มีผลการเรียนและพฤติกรรมอยู่ในกลุ่มวิกฤต (ความเสี่ยงสูง) เนื่องจากคะแนนสะสมอยู่ที่ ${finalPercentage}% (คาดการณ์เกรด ${grade}) ร่วมกับอัตราการเข้าชั้นเรียนอยู่ที่ ${attendanceRate}% (${totalAbsences > 0 ? `ขาดเรียนสะสม ${totalAbsences} ครั้ง` : "เวลาเรียนต่ำกว่าเกณฑ์"}) ${
+      lateCount > 0 || missingCount > 0
+        ? `และมีประวัติงานค้างส่ง/ส่งช้าสะสม ${lateCount + missingCount} ชิ้น`
+        : ""
+    } จำเป็นต้องได้รับการดูแลและวางแผนช่วยเหลืออย่างเร่งด่วน`;
+  } else if (risk === "yellow") {
+    summary = `นักเรียนรหัส ${studentCode} (${studentName}) อยู่ในกลุ่มเฝ้าระวัง มีผลสัมฤทธิ์ทางการเรียนอยู่ในระดับปานกลาง คะแนนสะสมอยู่ที่ ${finalPercentage}% (คาดการณ์เกรด ${grade}) โดยมีอัตราการเข้าเรียน ${attendanceRate}% ${
+      lateCount > 0 ? `และมีงานส่งล่าช้า ${lateCount} ชิ้น` : ""
+    } ควรได้รับการกระตุ้นและติดตามอย่างต่อเนื่องเพื่อป้องกันผลการเรียนถดถอย`;
+  } else {
+    // Green
+    summary = `นักเรียนรหัส ${studentCode} (${studentName}) มีผลสัมฤทธิ์ทางการเรียนและพฤติกรรมอยู่ในเกณฑ์ดีเยี่ยมเป็นแบบอย่างที่ดี อัตราการเข้าเรียนสม่ำเสมอสูงถึง ${attendanceRate}% คะแนนสะสมปัจจุบันอยู่ที่ ${finalPercentage}% คาดการณ์ผลการเรียนที่เกรด ${grade} มีความพร้อมในการต่อยอดการเรียนรู้สู่ระดับสูง`;
+  }
+
+  // 2. Strengths Analysis
+  const strengthPoints: string[] = [];
+  if (attendanceRate >= 90) {
+    strengthPoints.push(`มีความรับผิดชอบในการเข้าชั้นเรียนสม่ำเสมอดีมาก (อัตราการเข้าเรียน ${attendanceRate}%)`);
+  }
+  if (finalPercentage >= 75) {
+    strengthPoints.push(`ผลสัมฤทธิ์และทักษะความเข้าใจในบทเรียนหลักอยู่ในระดับสูง ทำคะแนนสะสมได้ถึง ${finalPercentage}%`);
+  }
+  if (lateCount === 0 && missingCount === 0) {
+    strengthPoints.push("มีวินัยในการส่งงานตรงต่อเวลาครบถ้วนทุกชิ้นงาน");
+  }
+
+  // Check individual component strengths
+  for (const [comp, score] of Object.entries(componentScores)) {
+    if (score >= 80) {
+      strengthPoints.push(`มีความโดดเด่นเป็นพิเศษในหมวด "${comp}" (ได้คะแนนเฉลี่ย ${score}%)`);
+      break;
+    }
+  }
+
+  if (notes && notes.trim()) {
+    strengthPoints.push(`มีจุดเด่นตามข้อสังเกตของผู้สอน: "${notes.trim()}"`);
+  }
+
+  if (strengthPoints.length === 0) {
+    strengthPoints.push("มีศักยภาพในการเรียนรู้และพร้อมพัฒนา หากได้รับการกระตุ้นและแนะนำอย่างเหมาะสม");
+  }
+
+  const strengths = strengthPoints.join(" • ");
+
+  // 3. Weaknesses / Improvement Areas Analysis
+  const weaknessPoints: string[] = [];
+  if (attendanceRate < 80 || totalAbsences >= 3) {
+    weaknessPoints.push(`อัตราการเข้าเรียนลดลงต่ำกว่าเกณฑ์ (${attendanceRate}%) ขาดเรียนสะสม ${totalAbsences} ครั้ง`);
+  }
+  if (lateCount > 0) {
+    weaknessPoints.push(`มีพฤติกรรมการส่งงานล่าช้าสะสม ${lateCount} ชิ้นงาน`);
+  }
+  if (missingCount > 0) {
+    weaknessPoints.push(`มียอดงานที่ยังค้างส่ง ${missingCount} ชิ้นงาน`);
+  }
+  if (finalPercentage < 55) {
+    weaknessPoints.push(`คะแนนเก็บสะสมเฉลี่ยยังต่ำกว่าเกณฑ์มาตรฐาน (${finalPercentage}%)`);
+  }
+
+  // Check individual component weaknesses
+  for (const [comp, score] of Object.entries(componentScores)) {
+    if (score < 50) {
+      weaknessPoints.push(`จำเป็นต้องเสริมทักษะในหมวด "${comp}" เพิ่มเติม (คะแนนเฉลี่ย ${score}%)`);
+      break;
+    }
+  }
+
+  if (weaknessPoints.length === 0) {
+    weaknessPoints.push("ไม่พบข้อสังเกตด้านพฤติกรรมหรือผลการเรียนที่น่ากังวล ควรรักษามาตรฐานที่ดีต่อไป");
+  }
+
+  const weaknesses = weaknessPoints.join(" • ");
+
+  // 4. Actionable Recommendations (Teacher, Parents, Intervention)
+  const recommendations: string[] = [];
+
+  if (risk === "red") {
+    recommendations.push(
+      "สำหรับครูผู้สอน: จัดตารางสอนเสริมแบบกลุ่มย่อย (Remedial Teaching) และเปิดโอกาสให้ทำแบบฝึกหัด/งานซ่อมเสริมเพื่อดึงคะแนนขึ้นพ้นเกณฑ์วิกฤต",
+      "สำหรับผู้ปกครอง: ขอความร่วมมือในการประสานงานติดตามเวลาตื่นนอน การเดินทางมาเรียน และตรวจสอบภาระงานที่ต้องส่งในแต่ละสัปดาห์",
+      "แนวทางพัฒนาพิเศษ: จัดระบบเพื่อนร่วมชั้นช่วยประกบดูแล (Peer Buddy) ในการทบทวนบทเรียนและเตือนการส่งงาน"
+    );
+  } else if (risk === "yellow") {
+    recommendations.push(
+      "สำหรับครูผู้สอน: คอยกำชับกำหนดเวลาส่งงานล่วงหน้า 1 คาบเรียน และตรวจสอบความเข้าใจในหัวข้อที่คะแนนยังไม่ผ่านเกณฑ์",
+      "สำหรับผู้ปกครอง: ช่วยส่งเสริมสภาพแวดล้อมการทำการบ้านที่บ้าน และชื่นชมเมื่อนักเรียนมีความรับผิดชอบส่งงานตรงเวลา",
+      "แนวทางพัฒนาพิเศษ: ฝึกให้นักเรียนทำสมุดจดบันทึกภาระงาน (Task Checklist) รายวันเพื่อสร้างวินัยการบริหารเวลา"
+    );
+  } else {
+    // Green
+    recommendations.push(
+      "สำหรับครูผู้สอน: มอบหมายโจทย์ท้าทายระดับสูง (Advanced Task) หรือโครงงานสร้างสรรค์เพื่อต่อยอดศักยภาพความเป็นเลิศ",
+      "สำหรับผู้ปกครอง: ส่งเสริมความสนใจเฉพาะด้านตามความถนัดของนักเรียน และให้การสนับสนุนกิจกรรมพัฒนาทักษะรอบด้าน",
+      "แนวทางพัฒนาพิเศษ: ส่งเสริมบทบาทการเป็นผู้นำกลุ่มหรือเป็นผู้ช่วยแนะนำเพื่อนในชั้นเรียน (Peer Tutor)"
+    );
+  }
+
+  return {
+    summary,
+    strengths,
+    weaknesses,
+    recommendations,
+  };
+}
+
