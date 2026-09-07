@@ -659,7 +659,7 @@ export default function StudentsPage() {
                           {`${std.prefix || ""}${std.first_name} ${std.last_name}`}
                         </td>
                         <td className="px-4 py-3">
-                          {std.line_account ? (
+                          {std.line_account && std.line_account.id ? (
                             <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 text-[11px] font-medium">
                               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                               <span className="truncate max-w-[90px]">{std.line_account.display_name || "ผูกแล้ว"}</span>

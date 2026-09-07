@@ -179,12 +179,18 @@ export const db = {
       return fallbackData || [];
     }
 
-    return (data || []).map((s: any) => ({
-      ...s,
-      line_account: Array.isArray(s.student_line_accounts) && s.student_line_accounts.length > 0
-        ? s.student_line_accounts[0]
-        : (s.student_line_accounts || null),
-    }));
+    return (data || []).map((s: any) => {
+      let lineAccount: StudentLineAccount | null = null;
+      if (Array.isArray(s.student_line_accounts) && s.student_line_accounts.length > 0) {
+        lineAccount = s.student_line_accounts[0];
+      } else if (s.student_line_accounts && typeof s.student_line_accounts === "object" && !Array.isArray(s.student_line_accounts) && s.student_line_accounts.id) {
+        lineAccount = s.student_line_accounts;
+      }
+      return {
+        ...s,
+        line_account: lineAccount,
+      };
+    });
   },
 
   async unlinkStudentLineAccount(studentId: string, classroomId: string): Promise<void> {
