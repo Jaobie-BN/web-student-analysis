@@ -388,10 +388,21 @@ export const lineService = {
       throw new Error(`ไม่พบรหัสห้องเรียน "${cleanRoomCode}" กรุณาตรวจสอบรหัสห้องอีกครั้ง`);
     }
 
-    // 2. Find student in classroom
+    // 2. Find student in classroom and check existing binding in one query
     const { data: student, error: sErr } = await supabaseAdmin
       .from("students")
-      .select("id, student_code, prefix, first_name, last_name, classroom_id")
+      .select(`
+        id,
+        student_code,
+        prefix,
+        first_name,
+        last_name,
+        classroom_id,
+        student_line_accounts (
+          id,
+          line_user_id
+        )
+      `)
       .eq("classroom_id", classroom.id)
       .eq("student_code", cleanStudentCode)
       .maybeSingle();
@@ -416,13 +427,7 @@ export const lineService = {
     }
 
     // 4. Check if student is already linked to another LINE user
-    const { data: existingBinding } = await supabaseAdmin
-      .from("student_line_accounts")
-      .select("id, line_user_id")
-      .eq("student_id", student.id)
-      .eq("classroom_id", classroom.id)
-      .maybeSingle();
-
+    const existingBinding = (student as any).student_line_accounts?.[0];
     if (existingBinding && existingBinding.line_user_id !== lineUserId) {
       throw new Error("รหัสนักเรียนนี้ถูกผูกกับบัญชี LINE อื่นแล้ว กรุณาติดต่อคุณครูผู้สอน");
     }
@@ -442,8 +447,8 @@ export const lineService = {
         },
         { onConflict: "classroom_id,student_id" }
       )
-      .select()
-      .single();
+      .select("id")
+      .maybeSingle();
 
     if (bErr) throw bErr;
 

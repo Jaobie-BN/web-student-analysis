@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { CheckCircle, AlertCircle, Sparkles, BookOpen, User, Hash, Lock } from "lucide-react";
+import { CheckCircle, AlertCircle, Sparkles, BookOpen, User, Hash, Lock, Loader2 } from "lucide-react";
 
 declare global {
   interface Window {
@@ -240,10 +240,13 @@ function BindContent() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white font-medium rounded-xl shadow-md transition-all flex items-center justify-center space-x-2 mt-4 disabled:opacity-50"
+              className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white font-medium rounded-xl shadow-md transition-all flex items-center justify-center space-x-2 mt-4 disabled:opacity-75 disabled:cursor-not-allowed"
             >
               {loading ? (
-                <span>กำลังตรวจสอบข้อมูล...</span>
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin text-white" />
+                  <span>กำลังตรวจสอบและผูกบัญชี...</span>
+                </>
               ) : (
                 <>
                   <span>ยืนยันและผูกบัญชี</span>
