@@ -222,7 +222,7 @@ export const lineService = {
 
     const { data: classroom } = await supabaseAdmin
       .from("classrooms")
-      .select("id, name")
+      .select("id, name, behavior_config")
       .eq("id", classroomId)
       .single();
 
@@ -258,6 +258,21 @@ export const lineService = {
         grade_component: ass.grade_component,
         max_score: ass.max_score,
       }));
+
+    // Sort missing assignments:
+    // 1. If teacher custom-ordered columns in Gradebook (assignment_order), use that order
+    // 2. Otherwise sort naturally by number/name (e.g. ใบงานที่ 2, 5, 7, 8)
+    const customOrder = (classroom?.behavior_config as any)?.assignment_order || [];
+    missing.sort((a, b) => {
+      if (customOrder.length > 0) {
+        const idxA = customOrder.indexOf(a.id);
+        const idxB = customOrder.indexOf(b.id);
+        if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+        if (idxA !== -1) return -1;
+        if (idxB !== -1) return 1;
+      }
+      return a.name.localeCompare(b.name, "th", { numeric: true });
+    });
 
     return { student, classroom, missing };
   },
