@@ -149,12 +149,52 @@ export const lineService = {
       }
     );
 
-    // Format components breakdown
-    const components = Object.keys(classroom.grade_weights || {}).map((key) => ({
-      name: key,
-      score: result.componentScores[key] ?? 0,
-      weight: classroom.grade_weights[key],
-    }));
+    // Helper to translate component names to friendly Thai labels
+    const getThaiCompName = (name: string) => {
+      const lower = name.toLowerCase().trim();
+      if (
+        lower === "attendance" ||
+        lower === "จิตพิสัย" ||
+        lower === "เวลาเรียน" ||
+        lower === "การเข้าเรียน" ||
+        lower === "เช็คชื่อ" ||
+        lower === "จิตพิสัย/เข้าเรียน"
+      ) {
+        return "จิตพิสัย";
+      }
+      if (lower === "homework") return "ใบงาน/การบ้าน";
+      if (lower === "midterm") return "ทดสอบกลางภาค";
+      if (lower === "final") return "ทดสอบปลายภาค";
+      return name;
+    };
+
+    // Format components breakdown with earned points based on category weight
+    const components = Object.keys(classroom.grade_weights || {}).map((key) => {
+      const weight = Number(classroom.grade_weights[key]) || 0;
+      const score100 = result.componentScores[key] ?? 0;
+      const rawEarned = (score100 / 100) * weight;
+      return {
+        name: key,
+        displayName: getThaiCompName(key),
+        score: score100, // percentage 0-100%
+        earnedScore: parseFloat(rawEarned.toFixed(1)),
+        weight: weight,
+      };
+    });
+
+    // Find behavior category weight (e.g. 20%)
+    const behaviorWeightKey = Object.keys(classroom.grade_weights || {}).find((k) => {
+      const lower = k.toLowerCase().trim();
+      return (
+        lower === "attendance" ||
+        lower === "จิตพิสัย" ||
+        lower === "เวลาเรียน" ||
+        lower === "การเข้าเรียน" ||
+        lower === "จิตพิสัย/เข้าเรียน"
+      );
+    });
+    const behaviorWeight = behaviorWeightKey ? Number(classroom.grade_weights[behaviorWeightKey]) || 20 : 20;
+    const behaviorEarned = (result.behaviorScore / 100) * behaviorWeight;
 
     return {
       student,
@@ -162,7 +202,9 @@ export const lineService = {
       finalGrade: result.grade,
       finalPercentage: result.finalPercentage,
       risk: result.risk,
-      behaviorScore: result.behaviorScore,
+      behaviorScore: parseFloat(behaviorEarned.toFixed(1)),
+      behaviorMaxScore: behaviorWeight,
+      behaviorScore100: result.behaviorScore,
       attendanceRate: result.attendanceRate,
       components,
     };

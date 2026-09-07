@@ -126,7 +126,9 @@ function DashboardContent() {
           </div>
           <div className="text-right">
             <p className="text-[10px] text-slate-400 font-medium">คะแนนสะสมรวม</p>
-            <p className="text-xl font-bold text-emerald-400">{finalPercentage.toFixed(1)}%</p>
+            <p className="text-xl font-bold text-emerald-400">
+              {finalPercentage.toFixed(1)} <span className="text-xs text-slate-400 font-normal">/ 100</span>
+            </p>
           </div>
         </div>
       </div>
@@ -141,11 +143,16 @@ function DashboardContent() {
           <div className="space-y-3.5">
             {components.map((c: any) => {
               const pct = Math.min(100, Math.max(0, c.score));
+              const weight = c.weight !== undefined ? c.weight : 100;
+              const earned = c.earnedScore !== undefined ? c.earnedScore : (c.score / 100) * weight;
+              const label = c.displayName || c.name;
               return (
                 <div key={c.name}>
                   <div className="flex justify-between text-xs mb-1">
-                    <span className="font-medium text-slate-700">{c.name}</span>
-                    <span className="font-bold text-slate-900">{c.score.toFixed(1)}%</span>
+                    <span className="font-medium text-slate-700">{label} ({weight}%)</span>
+                    <span className="font-bold text-slate-900">
+                      {earned.toFixed(1)} / {weight} <span className="text-slate-400 font-normal text-[10px]">({pct.toFixed(0)}%)</span>
+                    </span>
                   </div>
                   <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
                     <div
@@ -159,13 +166,20 @@ function DashboardContent() {
               );
             })}
 
-            {/* Behavior score item */}
-            <div className="pt-2 border-t border-slate-100">
-              <div className="flex justify-between text-xs mb-1">
-                <span className="font-medium text-slate-700">คะแนนจิตพิสัย (พฤติกรรม)</span>
-                <span className="font-bold text-emerald-600">{behaviorScore} / 100</span>
+            {/* Behavior score item (shown only if not already listed in components above) */}
+            {!components.some((c: any) => {
+              const n = (c.name || "").toLowerCase();
+              return n.includes("attendance") || n.includes("จิตพิสัย") || n.includes("เวลาเรียน");
+            }) && (
+              <div className="pt-2 border-t border-slate-100">
+                <div className="flex justify-between text-xs mb-1">
+                  <span className="font-medium text-slate-700">คะแนนจิตพิสัย (พฤติกรรม)</span>
+                  <span className="font-bold text-emerald-600">
+                    {behaviorScore} / {scoreReport.behaviorMaxScore || 20}
+                  </span>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
 

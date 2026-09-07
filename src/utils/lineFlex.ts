@@ -130,33 +130,46 @@ export const lineFlex = {
     scoreData: {
       finalGrade: string;
       finalPercentage: number;
-      components: { name: string; score: number; maxScore?: number; weight?: number }[];
+      components: {
+        name: string;
+        displayName?: string;
+        score: number;
+        maxScore?: number;
+        weight?: number;
+        earnedScore?: number;
+      }[];
     },
     liffDashboardUrl?: string
   ): FlexMessage {
-    const componentRows = scoreData.components.map((c) => ({
-      type: "box" as const,
-      layout: "horizontal" as const,
-      margin: "sm" as const,
-      contents: [
-        {
-          type: "text" as const,
-          text: c.name,
-          size: "sm" as const,
-          color: "#64748b",
-          flex: 4,
-        },
-        {
-          type: "text" as const,
-          text: `${c.score.toFixed(1)}%`,
-          size: "sm" as const,
-          color: "#0f172a",
-          weight: "bold" as const,
-          align: "end" as const,
-          flex: 2,
-        },
-      ],
-    }));
+    const componentRows = scoreData.components.map((c) => {
+      const weight = c.weight !== undefined ? c.weight : 100;
+      const earned = c.earnedScore !== undefined ? c.earnedScore : (c.score / 100) * weight;
+      const label = c.displayName || c.name;
+
+      return {
+        type: "box" as const,
+        layout: "horizontal" as const,
+        margin: "sm" as const,
+        contents: [
+          {
+            type: "text" as const,
+            text: `${label} (${weight}%)`,
+            size: "xs" as const,
+            color: "#64748b",
+            flex: 5,
+          },
+          {
+            type: "text" as const,
+            text: `${earned.toFixed(1)} / ${weight}`,
+            size: "xs" as const,
+            color: "#0f172a",
+            weight: "bold" as const,
+            align: "end" as const,
+            flex: 4,
+          },
+        ],
+      };
+    });
 
     const bubble: FlexBubble = {
       type: "bubble",
@@ -248,8 +261,8 @@ export const lineFlex = {
                   },
                   {
                     type: "text",
-                    text: `${scoreData.finalPercentage.toFixed(1)}%`,
-                    size: "xl",
+                    text: `${scoreData.finalPercentage.toFixed(1)} / 100`,
+                    size: "lg",
                     weight: "bold",
                     color: "#0f172a",
                     margin: "xs",
