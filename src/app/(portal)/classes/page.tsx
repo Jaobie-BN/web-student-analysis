@@ -16,8 +16,10 @@ import {
   ChevronRight,
   BookOpen,
   Lock,
-  AlertTriangle
+  AlertTriangle,
+  QrCode,
 } from "lucide-react";
+import ClassroomQrModal from "@/components/ClassroomQrModal";
 
 const WEEKDAYS = ["จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์", "อาทิตย์"];
 const WEEKDAYS_SHORT = ["จ.", "อ.", "พ.", "พฤ.", "ศ.", "ส.", "อา."];
@@ -96,6 +98,7 @@ export default function ClassroomsPage() {
   const [showCleanupConfirm, setShowCleanupConfirm] = useState(false);
   const [cleanupConfirmText, setCleanupConfirmText] = useState("");
   const [isCleaning, setIsCleaning] = useState(false);
+  const [showQrModal, setShowQrModal] = useState(false);
 
   // Sync edits when currentClassroom changes
   useEffect(() => {
@@ -597,10 +600,38 @@ export default function ClassroomsPage() {
               
               {/* Part 1: Info */}
               <div className="border-b border-slate-100 dark:border-slate-800 pb-6">
-                <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2 mb-4">
-                  <Calendar className="w-4.5 h-4.5 text-primary dark:text-sky-400" />
-                  <span>ข้อมูลวิชา: {currentClassroom.name}</span>
-                </h3>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                  <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                    <Calendar className="w-4.5 h-4.5 text-primary dark:text-sky-400" />
+                    <span>ข้อมูลวิชา: {currentClassroom.name}</span>
+                  </h3>
+                </div>
+
+                {/* LINE Bot Integration Banner */}
+                <div className="bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 shadow-sm">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-500 text-white font-black text-xs flex items-center justify-center shadow-sm">
+                      LINE
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-slate-600 dark:text-slate-400 font-medium">รหัสห้องสำหรับนักเรียน:</span>
+                        <span className="font-mono font-bold text-sm bg-white dark:bg-slate-800 px-2.5 py-0.5 rounded-lg border border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-400 tracking-wider">
+                          {currentClassroom.room_code || currentClassroom.id.substring(0, 6).toUpperCase()}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">ให้นักเรียนใช้รหัสนี้ผูก LINE เพื่อเช็คคะแนนและงานค้าง</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowQrModal(true)}
+                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-sm transition-all self-start sm:self-auto cursor-pointer"
+                  >
+                    <QrCode className="w-4 h-4" />
+                    <span>ฉาย QR Code ขึ้นจอ</span>
+                  </button>
+                </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
@@ -1167,6 +1198,13 @@ export default function ClassroomsPage() {
         </div>
 
       </div>
+      {currentClassroom && (
+        <ClassroomQrModal
+          classroom={currentClassroom}
+          isOpen={showQrModal}
+          onClose={() => setShowQrModal(false)}
+        />
+      )}
     </div>
   );
 }

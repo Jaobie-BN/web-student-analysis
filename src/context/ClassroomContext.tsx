@@ -27,6 +27,7 @@ interface ClassroomContextType {
   importStudents: (students: Omit<Student, "id" | "classroom_id">[]) => Promise<void>;
   updateStudent: (id: string, updates: Partial<Omit<Student, "id" | "classroom_id">>) => Promise<Student>;
   deleteStudent: (id: string) => Promise<void>;
+  unlinkLineAccount: (studentId: string) => Promise<void>;
   
   saveAttendance: (records: { studentId: string; date: string; status: "present" | "late" | "sick" | "absent" }[]) => Promise<void>;
   
@@ -316,6 +317,14 @@ export function ClassroomProvider({ children }: { children: React.ReactNode }) {
     setScores(scores.filter((sc) => sc.student_id !== id));
   };
 
+  const unlinkLineAccount = async (studentId: string) => {
+    if (!currentClassroom) throw new Error("No active classroom selected");
+    await db.unlinkStudentLineAccount(studentId, currentClassroom.id);
+    setStudents(
+      students.map((s) => (s.id === studentId ? { ...s, line_account: null } : s))
+    );
+  };
+
   const saveAttendance = async (records: { studentId: string; date: string; status: "present" | "late" | "sick" | "absent" }[]) => {
     if (!currentClassroom) throw new Error("No active classroom selected");
     const formatted = records.map((r) => ({
@@ -438,6 +447,7 @@ export function ClassroomProvider({ children }: { children: React.ReactNode }) {
         importStudents,
         updateStudent,
         deleteStudent,
+        unlinkLineAccount,
         saveAttendance,
         createAssignment,
         updateAssignment,

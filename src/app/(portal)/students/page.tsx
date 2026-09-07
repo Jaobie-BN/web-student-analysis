@@ -40,9 +40,20 @@ export default function StudentsPage() {
     importStudents,
     deleteStudent,
     updateStudent,
+    unlinkLineAccount,
     loading: classroomLoading
   } = useClassroom();
   const { success: toastSuccess, error: toastError } = useToast();
+
+  const handleUnlinkLine = async (studentId: string, studentName: string) => {
+    if (!confirm(`คุณต้องการปลดการผูก LINE ของ "${studentName}" ใช่หรือไม่?\n(เมื่อปลดแล้ว นักเรียนจะต้องผูกบัญชีใหม่อีกครั้ง)`)) return;
+    try {
+      await unlinkLineAccount(studentId);
+      toastSuccess(`ปลดการผูก LINE ของ ${studentName} สำเร็จ`);
+    } catch (err: any) {
+      toastError(err.message || "เกิดข้อผิดพลาดในการปลดการผูก LINE");
+    }
+  };
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -635,6 +646,7 @@ export default function StudentsPage() {
                     <tr className="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">
                       <th className="px-4 py-3">รหัสนักเรียน</th>
                       <th className="px-4 py-3">ชื่อ - นามสกุล</th>
+                      <th className="px-4 py-3">LINE Bot</th>
                       <th className="px-4 py-3">หมายเหตุ</th>
                       <th className="px-4 py-3 text-center">จัดการ</th>
                     </tr>
@@ -645,6 +657,27 @@ export default function StudentsPage() {
                         <td className="px-4 py-3 font-mono font-bold text-primary dark:text-sky-400">{std.student_code}</td>
                         <td className="px-4 py-3 font-semibold text-slate-800 dark:text-slate-200">
                           {`${std.prefix || ""}${std.first_name} ${std.last_name}`}
+                        </td>
+                        <td className="px-4 py-3">
+                          {std.line_account ? (
+                            <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 text-[11px] font-medium">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                              <span className="truncate max-w-[90px]">{std.line_account.display_name || "ผูกแล้ว"}</span>
+                              <button
+                                type="button"
+                                onClick={() => handleUnlinkLine(std.id, `${std.first_name} ${std.last_name}`)}
+                                className="ml-1 text-slate-400 hover:text-red-500 transition-colors cursor-pointer"
+                                title="ปลดการผูก LINE เพื่อให้นักเรียนผูกใหม่"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </div>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-slate-400 text-[11px]">
+                              <span className="w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-slate-600"></span>
+                              <span>ยังไม่ผูก</span>
+                            </span>
+                          )}
                         </td>
                         <td className="px-4 py-3 text-slate-400 italic max-w-[180px] truncate">
                           {std.notes || "-"}

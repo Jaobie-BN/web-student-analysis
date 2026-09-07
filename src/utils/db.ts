@@ -8,6 +8,7 @@ export interface Classroom {
   weekly_schedule: string;
   semester_start_date: string;
   total_weeks: number;
+  room_code?: string;
   grade_weights: {
     [key: string]: number;
   };
@@ -37,6 +38,17 @@ export interface Classroom {
   created_at?: string;
 }
 
+export interface StudentLineAccount {
+  id: string;
+  line_user_id: string;
+  student_id: string;
+  classroom_id: string;
+  display_name?: string;
+  picture_url?: string;
+  is_active: boolean;
+  linked_at: string;
+}
+
 export interface Student {
   id: string;
   classroom_id: string;
@@ -45,6 +57,7 @@ export interface Student {
   first_name: string;
   last_name: string;
   notes?: string;
+  line_account?: StudentLineAccount | null;
 }
 
 export interface Attendance {
@@ -151,11 +164,36 @@ export const db = {
   async getStudents(classroomId: string): Promise<Student[]> {
     const { data, error } = await supabase
       .from("students")
-      .select("*")
+      .select("*, student_line_accounts(*)")
       .eq("classroom_id", classroomId)
       .order("student_code", { ascending: true });
+    
+    if (error) {
+      // Fallback if relation or table isn't migrated yet
+      const { data: fallbackData, error: fallbackError } = await supabase
+        .from("students")
+        .select("*")
+        .eq("classroom_id", classroomId)
+        .order("student_code", { ascending: true });
+      if (fallbackError) throw fallbackError;
+      return fallbackData || [];
+    }
+
+    return (data || []).map((s: any) => ({
+      ...s,
+      line_account: Array.isArray(s.student_line_accounts) && s.student_line_accounts.length > 0
+        ? s.student_line_accounts[0]
+        : (s.student_line_accounts || null),
+    }));
+  },
+
+  async unlinkStudentLineAccount(studentId: string, classroomId: string): Promise<void> {
+    const { error } = await supabase
+      .from("student_line_accounts")
+      .delete()
+      .eq("student_id", studentId)
+      .eq("classroom_id", classroomId);
     if (error) throw error;
-    return data || [];
   },
 
   async createStudent(student: Omit<Student, "id">): Promise<Student> {

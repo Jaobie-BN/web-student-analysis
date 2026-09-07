@@ -241,3 +241,67 @@ CREATE INDEX IF NOT EXISTS idx_assignments_classroom ON assignments(classroom_id
 CREATE INDEX IF NOT EXISTS idx_student_scores_student ON student_scores(student_id);
 CREATE INDEX IF NOT EXISTS idx_student_scores_assignment ON student_scores(assignment_id);
 CREATE INDEX IF NOT EXISTS idx_ai_reports_student ON ai_reports(student_id);
+
+-- 7. LINE BOT INTEGRATION & STUDENT ACCOUNTS
+ALTER TABLE classrooms 
+ADD COLUMN IF NOT EXISTS room_code VARCHAR(10) UNIQUE;
+
+CREATE OR REPLACE FUNCTION generate_room_code() 
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.room_code IS NULL OR NEW.room_code = '' THEN
+    NEW.room_code := UPPER(SUBSTRING(MD5(RANDOM()::TEXT) FROM 1 FOR 6));
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS set_room_code_trigger ON classrooms;
+CREATE TRIGGER set_room_code_trigger
+BEFORE INSERT ON classrooms
+FOR EACH ROW
+EXECUTE FUNCTION generate_room_code();
+
+CREATE INDEX IF NOT EXISTS idx_classrooms_room_code ON classrooms(room_code);
+
+CREATE TABLE IF NOT EXISTS student_line_accounts (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  line_user_id TEXT NOT NULL,
+  student_id UUID NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+  classroom_id UUID NOT NULL REFERENCES classrooms(id) ON DELETE CASCADE,
+  display_name TEXT,
+  picture_url TEXT,
+  is_active BOOLEAN DEFAULT true NOT NULL,
+  linked_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
+  UNIQUE (classroom_id, student_id),
+  UNIQUE (line_user_id, classroom_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_line_accounts_user ON student_line_accounts(line_user_id);
+CREATE INDEX IF NOT EXISTS idx_line_accounts_student ON student_line_accounts(student_id);
+CREATE INDEX IF NOT EXISTS idx_line_accounts_classroom ON student_line_accounts(classroom_id);
+
+ALTER TABLE student_line_accounts ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Teachers can view line bindings for their classrooms"
+  ON student_line_accounts
+  FOR SELECT
+  TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM classrooms 
+      WHERE classrooms.id = student_line_accounts.classroom_id AND classrooms.teacher_id = auth.uid()
+    )
+  );
+
+CREATE POLICY "Teachers can unlink line bindings in their classrooms"
+  ON student_line_accounts
+  FOR DELETE
+  TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM classrooms 
+      WHERE classrooms.id = student_line_accounts.classroom_id AND classrooms.teacher_id = auth.uid()
+    )
+  );
+
