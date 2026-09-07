@@ -199,7 +199,7 @@ export function ClassroomProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
 
 
-    if (!loading && !user && pathname !== "/" && pathname !== "/login") {
+    if (!loading && !user && pathname !== "/" && pathname !== "/login" && !pathname.startsWith("/liff")) {
       routerRef.current.push("/");
     }
   }, [loading, user, pathname]);
