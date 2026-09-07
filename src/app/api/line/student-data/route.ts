@@ -22,12 +22,11 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Missing studentId or classroomId" }, { status: 400 });
     }
 
-    // Fetch score report, missing assignments, attendance, and AI report in parallel
-    const [scoreReport, missingData, attendanceStats, aiReportData] = await Promise.all([
+    // Fetch score report, missing assignments, and attendance in parallel
+    const [scoreReport, missingData, attendanceStats] = await Promise.all([
       lineService.getScoreReport(studentId, classroomId),
       lineService.getMissingAssignments(studentId, classroomId),
       lineService.getAttendanceStats(studentId, classroomId),
-      lineService.getAIReport(studentId, classroomId),
     ]);
 
     return NextResponse.json({
@@ -35,7 +34,6 @@ export async function GET(req: NextRequest) {
       scoreReport,
       missingAssignments: missingData.missing,
       attendanceStats,
-      aiReport: aiReportData.report,
     });
   } catch (err: any) {
     console.error("Error fetching student data:", err);

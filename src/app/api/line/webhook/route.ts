@@ -158,15 +158,7 @@ export async function POST(req: NextRequest) {
           continue;
         }
 
-        // 5. AI Diagnostic Report
-        if (text.includes("ai") || text.includes("คำแนะนำ") || text.includes("วิเคราะห์") || text.includes("จุดเด่น") || text.includes("ปรับปรุง")) {
-          const { student, classroom, report } = await lineService.getAIReport(active.student_id, active.classroom_id);
-          const flexMsg = lineFlex.createAIReportFlex(student || active.student, classroom || active.classroom, report);
-          await reply(replyToken, flexMsg);
-          continue;
-        }
-
-        // 6. Classroom Switcher
+        // 5. Classroom Switcher
         if (text.includes("สลับวิชา") || text.includes("เลือกวิชา") || text.includes("เปลี่ยนวิชา") || text.includes("ห้องเรียน") || text.includes("switch")) {
           const classes = all.map((item) => ({
             id: item.classroom_id,
@@ -179,7 +171,7 @@ export async function POST(req: NextRequest) {
           continue;
         }
 
-        // 7. Default Quick Reply
+        // 6. Default Quick Reply
         await reply(replyToken, {
           type: "text",
           text: `สวัสดีครับ ${active.student?.prefix || ""}${active.student?.first_name} (วิชา ${active.classroom?.name})\nเลือกเมนูที่คุณต้องการตรวจสอบได้เลยครับ:`,
@@ -196,10 +188,6 @@ export async function POST(req: NextRequest) {
               {
                 type: "action",
                 action: { type: "message", label: "📅 เวลาเรียน", text: "เวลาเรียน" },
-              },
-              {
-                type: "action",
-                action: { type: "message", label: "🤖 คำแนะนำ AI", text: "คำแนะนำ AI" },
               },
               {
                 type: "action",

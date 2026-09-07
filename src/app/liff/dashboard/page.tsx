@@ -9,7 +9,6 @@ import {
   CheckCircle2,
   Clock,
   AlertTriangle,
-  Sparkles,
   ArrowLeft,
   XCircle,
 } from "lucide-react";
@@ -92,7 +91,7 @@ function DashboardContent() {
     );
   }
 
-  const { scoreReport, missingAssignments, attendanceStats, aiReport } = data;
+  const { scoreReport, missingAssignments, attendanceStats } = data;
   const { student, classroom, finalGrade, finalPercentage, components, behaviorScore } = scoreReport;
 
   return (
@@ -246,34 +245,6 @@ function DashboardContent() {
             </span>
           </div>
         </div>
-
-        {/* AI Diagnostic Insights */}
-        {aiReport && (
-          <div className="bg-gradient-to-br from-indigo-50/70 to-purple-50/70 rounded-2xl p-5 border border-indigo-100 shadow-sm">
-            <h2 className="text-xs font-bold text-indigo-900 uppercase tracking-wider mb-2 flex items-center space-x-1.5">
-              <Sparkles className="w-4 h-4 text-indigo-600" />
-              <span>คำแนะนำจาก AI ผู้ช่วยการเรียน</span>
-            </h2>
-            <p className="text-xs text-indigo-950 font-medium mb-3 leading-relaxed">
-              {aiReport.performance_summary}
-            </p>
-
-            <div className="space-y-2 text-xs">
-              <div className="bg-white/80 p-2.5 rounded-xl border border-indigo-50">
-                <span className="font-bold text-emerald-700 block mb-0.5">🌟 จุดเด่น:</span>
-                <span className="text-slate-700">{aiReport.strengths}</span>
-              </div>
-              <div className="bg-white/80 p-2.5 rounded-xl border border-indigo-50">
-                <span className="font-bold text-amber-700 block mb-0.5">🎯 จุดที่พัฒนาได้:</span>
-                <span className="text-slate-700">{aiReport.weaknesses}</span>
-              </div>
-              <div className="bg-white/80 p-2.5 rounded-xl border border-indigo-50">
-                <span className="font-bold text-blue-700 block mb-0.5">💡 คำแนะนำ:</span>
-                <span className="text-slate-700">{aiReport.recommendations}</span>
-              </div>
-            </div>
-          </div>
-        )}
 
         <button
           onClick={handleClose}
