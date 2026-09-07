@@ -321,15 +321,29 @@ export const lineService = {
     const cleanStudentCode = studentCode.trim();
     const cleanVerifyName = verifyName.trim().toLowerCase();
 
-    // 1. Find classroom
-    const { data: classroom, error: cErr } = await supabaseAdmin
+    // 1. Find classroom (supports room_code or id prefix)
+    let { data: classroom, error: cErr } = await supabaseAdmin
       .from("classrooms")
       .select("id, name, room_code")
-      .eq("room_code", cleanRoomCode)
-      .single();
+      .ilike("room_code", cleanRoomCode)
+      .maybeSingle();
+
+    // Fallback if room_code is prefix of classroom uuid id
+    if (!classroom && cleanRoomCode.length >= 4) {
+      const { data: fallbackClass } = await supabaseAdmin
+        .from("classrooms")
+        .select("id, name, room_code")
+        .ilike("id", `${cleanRoomCode.toLowerCase()}%`)
+        .maybeSingle();
+      if (fallbackClass) {
+        classroom = fallbackClass;
+        cErr = null;
+      }
+    }
 
     if (cErr || !classroom) {
-      throw new Error("ไม่พบรหัสห้องเรียนนี้ กรุณาตรวจสอบรหัสห้องอีกครั้ง");
+      console.error("bindStudent classroom lookup error:", cErr, "roomCode searched:", cleanRoomCode);
+      throw new Error(`ไม่พบรหัสห้องเรียน "${cleanRoomCode}" กรุณาตรวจสอบรหัสห้องอีกครั้ง`);
     }
 
     // 2. Find student in classroom
@@ -338,10 +352,11 @@ export const lineService = {
       .select("id, student_code, prefix, first_name, last_name, classroom_id")
       .eq("classroom_id", classroom.id)
       .eq("student_code", cleanStudentCode)
-      .single();
+      .maybeSingle();
 
     if (sErr || !student) {
-      throw new Error("ไม่พบรหัสนักเรียนนี้ในห้องเรียนดังกล่าว");
+      console.error("bindStudent student lookup error:", sErr, "studentCode:", cleanStudentCode);
+      throw new Error(`ไม่พบรหัสนักเรียน "${cleanStudentCode}" ในห้องเรียนนี้`);
     }
 
     // 3. Verify name (Check if first_name or last_name matches)

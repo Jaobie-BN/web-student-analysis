@@ -77,3 +77,27 @@ CREATE POLICY "Teachers can unlink line bindings in their classrooms"
       WHERE classrooms.id = student_line_accounts.classroom_id AND classrooms.teacher_id = auth.uid()
     )
   );
+
+-- 3. Public Lookup Policies (Allows student LIFF to find classroom and verify account without teacher login)
+DROP POLICY IF EXISTS "Allow public read classroom by room_code" ON classrooms;
+CREATE POLICY "Allow public read classroom by room_code"
+  ON classrooms
+  FOR SELECT
+  TO anon, authenticated
+  USING (room_code IS NOT NULL);
+
+DROP POLICY IF EXISTS "Allow public student verification" ON students;
+CREATE POLICY "Allow public student verification"
+  ON students
+  FOR SELECT
+  TO anon, authenticated
+  USING (true);
+
+DROP POLICY IF EXISTS "Allow public insert line accounts" ON student_line_accounts;
+CREATE POLICY "Allow public insert line accounts"
+  ON student_line_accounts
+  FOR ALL
+  TO anon, authenticated
+  USING (true)
+  WITH CHECK (true);
+
