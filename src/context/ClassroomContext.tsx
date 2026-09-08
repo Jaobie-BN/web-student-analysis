@@ -15,7 +15,7 @@ interface ClassroomContextType {
   attendance: Attendance[];
   scores: StudentScore[];
   reports: AIReport[];
-  refreshClassrooms: () => Promise<void>;
+  refreshClassrooms: (forcedTeacherId?: string) => Promise<void>;
   refreshCurrentClassroomData: () => Promise<void>;
   
   // Actions
@@ -60,7 +60,7 @@ export function ClassroomProvider({ children }: { children: React.ReactNode }) {
 
 
 
-  const refreshClassroomsRef = useRef<(() => Promise<void>) | null>(null);
+  const refreshClassroomsRef = useRef<((forcedTeacherId?: string) => Promise<void>) | null>(null);
   const isRefreshingClassroomsRef = useRef(false);
   const routerRef = useRef(router);
   routerRef.current = router;
@@ -76,7 +76,7 @@ export function ClassroomProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   // Fetch Classrooms List (fetch only — selection handled separately)
-  const refreshClassrooms = useCallback(async () => {
+  const refreshClassrooms = useCallback(async (forcedTeacherId?: string) => {
     if (isRefreshingClassroomsRef.current) {
 
       return;
@@ -85,7 +85,7 @@ export function ClassroomProvider({ children }: { children: React.ReactNode }) {
     isRefreshingClassroomsRef.current = true;
 
     try {
-      const list = await db.getClassrooms();
+      const list = await db.getClassrooms(forcedTeacherId);
       setClassrooms((prev) => {
         if (
           prev.length === list.length &&
@@ -180,7 +180,7 @@ export function ClassroomProvider({ children }: { children: React.ReactNode }) {
         });
 
         if (currentUser) {
-          await refreshClassroomsRef.current?.();
+          await refreshClassroomsRef.current?.(currentUser.id);
         }
       } catch (err) {
         console.error("Auth initialization failed:", err);

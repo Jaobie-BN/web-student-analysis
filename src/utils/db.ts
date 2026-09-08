@@ -112,20 +112,32 @@ export const db = {
   },
 
   // --- CLASSROOMS ---
-  async getClassrooms(): Promise<Classroom[]> {
+  async getClassrooms(teacherId?: string): Promise<Classroom[]> {
+    let tid = teacherId;
+    if (!tid) {
+      const user = await this.getCurrentUser();
+      tid = user?.id;
+    }
+    if (!tid) return [];
+
     const { data, error } = await supabase
       .from("classrooms")
       .select("*")
+      .eq("teacher_id", tid)
       .order("created_at", { ascending: false });
     if (error) throw error;
     return data || [];
   },
 
   async getByIdClassroom(id: string): Promise<Classroom | null> {
+    const user = await this.getCurrentUser();
+    if (!user) return null;
+
     const { data, error } = await supabase
       .from("classrooms")
       .select("*")
       .eq("id", id)
+      .eq("teacher_id", user.id)
       .single();
     if (error) return null;
     return data;
@@ -145,10 +157,14 @@ export const db = {
   },
 
   async updateClassroom(id: string, updates: Partial<Omit<Classroom, "id" | "teacher_id">>): Promise<Classroom> {
+    const user = await this.getCurrentUser();
+    if (!user) throw new Error("Unauthorized");
+
     const { data, error } = await supabase
       .from("classrooms")
       .update(updates)
       .eq("id", id)
+      .eq("teacher_id", user.id)
       .select()
       .single();
     if (error) throw error;
@@ -156,7 +172,14 @@ export const db = {
   },
 
   async deleteClassroom(id: string): Promise<void> {
-    const { error } = await supabase.from("classrooms").delete().eq("id", id);
+    const user = await this.getCurrentUser();
+    if (!user) throw new Error("Unauthorized");
+
+    const { error } = await supabase
+      .from("classrooms")
+      .delete()
+      .eq("id", id)
+      .eq("teacher_id", user.id);
     if (error) throw error;
   },
 
