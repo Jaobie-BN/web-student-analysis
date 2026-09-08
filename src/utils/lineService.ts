@@ -283,7 +283,7 @@ export const lineService = {
   async getAttendanceStats(studentId: string, classroomId: string) {
     const { data: student } = await supabaseAdmin
       .from("students")
-      .select("id, student_code, first_name, last_name")
+      .select("id, student_code, prefix, first_name, last_name")
       .eq("id", studentId)
       .single();
 
@@ -459,7 +459,13 @@ export const lineService = {
       throw new Error("บัญชี LINE นี้ได้ผูกกับนักเรียนในห้องเรียนนี้แล้ว หากต้องการเปลี่ยนข้อมูล กรุณาติดต่อคุณครูผู้สอนครับ");
     }
 
-    // 6. Upsert binding
+    // 6. Set other bindings for this LINE user to inactive so new classroom is active
+    await supabaseAdmin
+      .from("student_line_accounts")
+      .update({ is_active: false })
+      .eq("line_user_id", lineUserId);
+
+    // 7. Upsert binding
     const { data: savedBinding, error: bErr } = await supabaseAdmin
       .from("student_line_accounts")
       .upsert(

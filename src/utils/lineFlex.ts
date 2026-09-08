@@ -513,7 +513,7 @@ export const lineFlex = {
                   {
                     type: "text",
                     text: `${stats.percentage.toFixed(1)}%`,
-                    size: "2xl",
+                    size: "xxl",
                     weight: "bold",
                     color: isSafe ? "#16a34a" : "#dc2626",
                   },

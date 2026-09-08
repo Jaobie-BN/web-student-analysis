@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { CheckCircle, AlertCircle, Sparkles, BookOpen, User, Hash, Lock, Loader2 } from "lucide-react";
+import { CheckCircle, AlertCircle, Sparkles, BookOpen, User, Hash, Lock, Loader2, ExternalLink } from "lucide-react";
 
 declare global {
   interface Window {
@@ -13,6 +13,7 @@ declare global {
 function BindContent() {
   const searchParams = useSearchParams();
   const prefilledRoom = searchParams.get("room") || "";
+  const queryUserId = searchParams.get("userId") || "";
 
   const [liffInitialized, setLiffInitialized] = useState(false);
   const [lineProfile, setLineProfile] = useState<{
@@ -32,47 +33,71 @@ function BindContent() {
     classroomName: string;
   } | null>(null);
 
+  const isDev = process.env.NODE_ENV === "development";
+  const effectiveUserId = lineProfile?.userId || queryUserId || (isDev ? "dev-line-user-demo" : null);
+
   // Initialize LIFF
   useEffect(() => {
     const liffId = process.env.NEXT_PUBLIC_LIFF_ID;
 
-    const initLiff = async () => {
-      if (typeof window !== "undefined" && window.liff && liffId) {
-        try {
-          await window.liff.init({ liffId });
-          setLiffInitialized(true);
+    const setupLiff = async () => {
+      if (!liffId || typeof window === "undefined") {
+        setLiffInitialized(true);
+        return;
+      }
 
-          if (window.liff.isLoggedIn()) {
-            const profile = await window.liff.getProfile();
-            setLineProfile({
-              userId: profile.userId,
-              displayName: profile.displayName,
-              pictureUrl: profile.pictureUrl,
-            });
-          } else {
-            // Not logged in or in external browser
-            window.liff.login();
-          }
-        } catch (err) {
-          console.warn("LIFF init error:", err);
-          setLiffInitialized(true);
+      try {
+        await window.liff.init({ liffId });
+        setLiffInitialized(true);
+
+        if (window.liff.isLoggedIn()) {
+          const profile = await window.liff.getProfile();
+          setLineProfile({
+            userId: profile.userId,
+            displayName: profile.displayName,
+            pictureUrl: profile.pictureUrl,
+          });
+        } else if (window.liff.isInClient()) {
+          window.liff.login();
         }
-      } else {
-        // Fallback for local development or when LIFF ID is not set yet
+      } catch (err) {
+        console.warn("LIFF init error:", err);
         setLiffInitialized(true);
       }
     };
 
-    // Small delay to ensure script has loaded
-    const timer = setTimeout(initLiff, 300);
-    return () => clearTimeout(timer);
+    const initLiff = async () => {
+      if (typeof window === "undefined") return;
+
+      if (!window.liff) {
+        let count = 0;
+        const interval = setInterval(async () => {
+          count++;
+          if (window.liff) {
+            clearInterval(interval);
+            await setupLiff();
+          } else if (count > 30) {
+            clearInterval(interval);
+            setLiffInitialized(true);
+          }
+        }, 100);
+        return;
+      }
+
+      await setupLiff();
+    };
+
+    initLiff();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
 
-    const userId = lineProfile?.userId || searchParams.get("userId") || "dev-line-user-demo";
+    if (!effectiveUserId) {
+      setErrorMsg("ไม่พบข้อมูลบัญชี LINE กรุณากดเปิดหน้านี้จากห้องแชทในแอปพลิเคชัน LINE ครับ");
+      return;
+    }
 
     if (!roomCode.trim() || !studentCode.trim() || !verifyName.trim()) {
       setErrorMsg("กรุณากรอกข้อมูลให้ครบถ้วนทุกช่องครับ");
@@ -86,7 +111,7 @@ function BindContent() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          lineUserId: userId,
+          lineUserId: effectiveUserId,
           roomCode: roomCode.trim().toUpperCase(),
           studentCode: studentCode.trim(),
           verifyName: verifyName.trim(),
@@ -133,6 +158,14 @@ function BindContent() {
           </div>
         </div>
 
+        {/* Loading LIFF status */}
+        {!liffInitialized && (
+          <div className="flex items-center space-x-2 p-3 bg-slate-50 border border-slate-200/80 rounded-xl mb-4 text-xs text-slate-500 animate-pulse">
+            <Loader2 className="w-4 h-4 animate-spin text-emerald-600" />
+            <span>กำลังตรวจสอบการเชื่อมต่อกับ LINE...</span>
+          </div>
+        )}
+
         {/* User Profile Card if in LINE */}
         {lineProfile && (
           <div className="flex items-center space-x-3 p-3 bg-slate-50 border border-slate-200/80 rounded-xl mb-6">
@@ -150,6 +183,29 @@ function BindContent() {
             <div className="min-w-0 flex-1">
               <p className="text-xs text-slate-400">เข้าสู่ระบบด้วย LINE</p>
               <p className="text-sm font-semibold text-slate-700 truncate">{lineProfile.displayName}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Warning if opened outside LINE client and no userId available */}
+        {liffInitialized && !effectiveUserId && (
+          <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs flex items-start space-x-2.5 mb-6">
+            <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0 text-amber-600" />
+            <div className="flex-1">
+              <p className="font-semibold text-amber-900">ไม่ได้เปิดจากในแอปพลิเคชัน LINE</p>
+              <p className="mt-0.5 text-amber-700 leading-relaxed">
+                กรุณากดเปิดลิงก์นี้จากในห้องแชทของระบบผ่านแอป LINE เพื่อให้สามารถระบุตัวตนและผูกผลการเรียนได้อย่างถูกต้องครับ
+              </p>
+              {typeof window !== "undefined" && window.liff && (
+                <button
+                  type="button"
+                  onClick={() => window.liff.login()}
+                  className="mt-2.5 px-3 py-1.5 bg-emerald-600 text-white rounded-lg font-medium text-xs shadow-sm hover:bg-emerald-700 transition-all flex items-center space-x-1"
+                >
+                  <span>เข้าสู่ระบบด้วย LINE</span>
+                  <ExternalLink className="w-3 h-3" />
+                </button>
+              )}
             </div>
           </div>
         )}
@@ -239,8 +295,8 @@ function BindContent() {
 
             <button
               type="submit"
-              disabled={loading}
-              className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white font-medium rounded-xl shadow-md transition-all flex items-center justify-center space-x-2 mt-4 disabled:opacity-75 disabled:cursor-not-allowed"
+              disabled={loading || (!effectiveUserId && liffInitialized)}
+              className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white font-medium rounded-xl shadow-md transition-all flex items-center justify-center space-x-2 mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? (
                 <>

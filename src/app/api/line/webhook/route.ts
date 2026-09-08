@@ -57,9 +57,11 @@ export async function POST(req: NextRequest) {
 
       if (!replyToken || !lineUserId) continue;
 
+      const userBindUrl = `${liffBindUrl}${liffBindUrl.includes("?") ? "&" : "?"}userId=${encodeURIComponent(lineUserId)}`;
+
       // --- EVENT: FOLLOW (เพิ่มเพื่อน) ---
       if (event.type === "follow") {
-        const welcomeMsg = lineFlex.createWelcomeMessage(liffBindUrl);
+        const welcomeMsg = lineFlex.createWelcomeMessage(userBindUrl);
         await reply(replyToken, welcomeMsg);
         continue;
       }
@@ -109,7 +111,7 @@ export async function POST(req: NextRequest) {
 
         // If not registered yet or asks to bind
         if (text.includes("ผูกบัญชี") || text.includes("ลงทะเบียน") || text.includes("เข้าห้อง") || text.includes("register") || text.includes("bind")) {
-          await reply(replyToken, lineFlex.createWelcomeMessage(liffBindUrl));
+          await reply(replyToken, lineFlex.createWelcomeMessage(userBindUrl));
           continue;
         }
 
@@ -120,7 +122,7 @@ export async function POST(req: NextRequest) {
               type: "text",
               text: "⚠️ คุณยังไม่ได้ผูกบัญชีกับห้องเรียนใดๆ ในระบบครับ กรุณากดปุ่มด้านล่างเพื่อเริ่มผูกบัญชี",
             },
-            lineFlex.createWelcomeMessage(liffBindUrl),
+            lineFlex.createWelcomeMessage(userBindUrl),
           ]);
           continue;
         }
@@ -151,7 +153,16 @@ export async function POST(req: NextRequest) {
         }
 
         // 4. Attendance
-        if (text.includes("เวลาเรียน") || text.includes("เช็คชื่อ") || text.includes("ขาดเรียน") || text.includes("มาสาย") || text.includes("เข้าเรียน") || text.includes("attendance")) {
+        if (
+          text.includes("เวลาเรียน") ||
+          text.includes("เช็คชื่อ") ||
+          text.includes("ขาดเรียน") ||
+          text.includes("มาสาย") ||
+          text.includes("เข้าเรียน") ||
+          text.includes("attendance") ||
+          text === "สถิติ" ||
+          text === "เวลา"
+        ) {
           const stats = await lineService.getAttendanceStats(active.student_id, active.classroom_id);
           const flexMsg = lineFlex.createAttendanceFlex(stats.student || active.student, stats.classroom || active.classroom, stats);
           await reply(replyToken, flexMsg);
@@ -166,7 +177,7 @@ export async function POST(req: NextRequest) {
             room_code: item.classroom?.room_code,
             student_code: item.student?.student_code || "",
           }));
-          const switcherMsg = lineFlex.createClassroomSwitcher(classes, liffBindUrl);
+          const switcherMsg = lineFlex.createClassroomSwitcher(classes, userBindUrl);
           await reply(replyToken, switcherMsg);
           continue;
         }
@@ -198,7 +209,11 @@ export async function POST(req: NextRequest) {
         });
       }
     } catch (eventErr: any) {
-      console.error("Error processing LINE event:", eventErr);
+      console.error(
+        "Error processing LINE event:",
+        eventErr?.message || eventErr,
+        eventErr?.body || eventErr?.response?.data || ""
+      );
     }
   }
 
