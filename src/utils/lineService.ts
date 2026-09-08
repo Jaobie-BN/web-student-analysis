@@ -447,8 +447,7 @@ export const lineService = {
       throw new Error("รหัสนักเรียนนี้ถูกผูกกับบัญชี LINE อื่นแล้ว กรุณาติดต่อคุณครูผู้สอน");
     }
 
-    // 5. If THIS LINE user was previously bound to another student in this classroom,
-    // clear the old binding so they can switch to the new student without unique constraint error
+    // 5. Check if THIS LINE user is already bound to a different student in this classroom
     const { data: userExistingBinding } = await supabaseAdmin
       .from("student_line_accounts")
       .select("id, student_id")
@@ -457,10 +456,7 @@ export const lineService = {
       .maybeSingle();
 
     if (userExistingBinding && userExistingBinding.student_id !== student.id) {
-      await supabaseAdmin
-        .from("student_line_accounts")
-        .delete()
-        .eq("id", userExistingBinding.id);
+      throw new Error("บัญชี LINE นี้ได้ผูกกับนักเรียนในห้องเรียนนี้แล้ว หากต้องการเปลี่ยนข้อมูล กรุณาติดต่อคุณครูผู้สอนครับ");
     }
 
     // 6. Upsert binding
