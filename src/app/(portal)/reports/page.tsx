@@ -1,14 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useClassroom } from "@/context/ClassroomContext";
 import { useToast } from "@/context/ToastContext";
 import { calculateFinalGrade, generateSessionDates, generateSmartStudentReport } from "@/utils/mathUtils";
+import { exportSubmissionStatusExcel, calculateSubmissionData } from "@/utils/submissionExport";
 import {
   Download,
   FileSpreadsheet,
   Printer,
   FileText,
+  CheckSquare,
 } from "lucide-react";
 import * as XLSX from "xlsx";
 
@@ -70,8 +72,31 @@ export default function ReportsPage() {
   } = useClassroom();
   const { success: toastSuccess, error: toastError } = useToast();
 
-  const [printMode, setPrintMode] = useState<"none" | "pap5" | "progress">("none");
+  const [printMode, setPrintMode] = useState<"none" | "pap5" | "progress" | "submissions">("none");
   const [exportLoading, setExportLoading] = useState(false);
+  const [submissionExportLoading, setSubmissionExportLoading] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("print") === "submissions") {
+        setPrintMode("submissions");
+        setTimeout(() => {
+          window.print();
+        }, 300);
+      }
+    }
+  }, []);
+
+  const submissionData = useMemo(() => {
+    return calculateSubmissionData(
+      students,
+      assignments,
+      scores,
+      currentClassroom?.behavior_config?.assignment_order,
+      currentClassroom?.behavior_config?.pending_revisions
+    );
+  }, [students, assignments, scores, currentClassroom]);
 
   if (!currentClassroom) {
     return (
@@ -278,7 +303,29 @@ export default function ReportsPage() {
     }
   };
 
-  const handlePrint = (mode: "pap5" | "progress") => {
+  const handleExportSubmissionExcel = async () => {
+    if (!currentClassroom) return;
+    setSubmissionExportLoading(true);
+    try {
+      await exportSubmissionStatusExcel({
+        classroomName: currentClassroom.name,
+        subjectCode: currentClassroom.room_code,
+        students,
+        assignments,
+        scores,
+        assignmentOrder: currentClassroom.behavior_config?.assignment_order,
+        pendingRevisions: currentClassroom.behavior_config?.pending_revisions,
+      });
+      toastSuccess("ส่งออกรายงานสถานะการส่งงาน (Excel) สำเร็จแล้ว!");
+    } catch (err: any) {
+      console.error(err);
+      toastError(err?.message || "เกิดข้อผิดพลาดในการสร้างไฟล์ Excel");
+    } finally {
+      setSubmissionExportLoading(false);
+    }
+  };
+
+  const handlePrint = (mode: "pap5" | "progress" | "submissions") => {
     setPrintMode(mode);
     setTimeout(() => {
       window.print();
@@ -307,7 +354,7 @@ export default function ReportsPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
             
             {/* Card 1: Excel Exporter */}
             <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
@@ -374,6 +421,39 @@ export default function ReportsPage() {
                 <span>พิมพ์ใบรายงานรายบุคคล</span>
               </button>
             </div>
+
+            {/* Card 4: Submission Status Report */}
+            <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
+              <div className="space-y-3">
+                <div className="p-3.5 rounded-2xl bg-teal-500/10 text-teal-600 dark:text-teal-400 border border-teal-500/20 w-fit">
+                  <CheckSquare className="w-6 h-6" />
+                </div>
+                <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">รายงานสถานะการส่งงาน (เขียว-แดง)</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                  ตรวจสอบการส่งงานของนักเรียนทุกคนในห้อง เซลล์สีเขียว (ส่งแล้ว) และสีแดง (ยังไม่ส่ง) พร้อมสรุปจำนวนงานและอัตราการส่งงาน
+                </p>
+              </div>
+
+              <div className="space-y-2 mt-6">
+                <button
+                  onClick={handleExportSubmissionExcel}
+                  disabled={submissionExportLoading || students.length === 0}
+                  className="w-full py-2.5 rounded-xl bg-teal-500/15 hover:bg-teal-500/25 border border-teal-500/30 text-teal-700 dark:text-teal-300 font-bold text-xs md:text-sm flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer disabled:opacity-50"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>{submissionExportLoading ? "กำลังส่งออก..." : "ดาวน์โหลด Excel (สีเขียว-แดง)"}</span>
+                </button>
+                <button
+                  onClick={() => handlePrint("submissions")}
+                  disabled={students.length === 0}
+                  className="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white font-bold text-xs md:text-sm flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer disabled:opacity-50 shadow-sm"
+                >
+                  <Printer className="w-4 h-4" />
+                  <span>จัดเตรียมแบบพิมพ์ PDF</span>
+                </button>
+              </div>
+            </div>
+
           </div>
         </>
       )}
@@ -617,6 +697,226 @@ export default function ReportsPage() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* ----------------------------------------------------
+         PRINT VIEW 3: ตารางติดตามสถานะการส่งงาน (Submission Status Table)
+         ---------------------------------------------------- */}
+      {printMode === "submissions" && (
+        <div className="bg-white text-black p-6 md:p-8 max-w-full font-sans print:p-0 print:m-0 print-landscape">
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-6 no-print">
+            <button
+              onClick={closePrintPreview}
+              className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-sm"
+            >
+              ← กลับสู่หน้าระบบรายงาน
+            </button>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleExportSubmissionExcel}
+                disabled={submissionExportLoading || students.length === 0}
+                className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-sm disabled:opacity-50"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>{submissionExportLoading ? "กำลังส่งออก..." : "ดาวน์โหลด Excel (สีเขียว-แดง)"}</span>
+              </button>
+              <button
+                onClick={() => window.print()}
+                className="px-4 py-2 bg-primary hover:bg-primary/95 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-sm"
+              >
+                <Printer className="w-3.5 h-3.5" />
+                <span>สั่งพิมพ์ / บันทึก PDF</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="text-center space-y-1.5 mb-6">
+            <h1 className="text-xl md:text-2xl font-bold text-slate-900">
+              รายงานสรุปและติดตามสถานะการส่งงานของนักเรียน
+            </h1>
+            <p className="text-xs md:text-sm text-slate-700">
+              ห้องเรียน/วิชา: <span className="font-semibold">{currentClassroom.name}</span>
+              {currentClassroom.room_code ? ` (${currentClassroom.room_code})` : ""} • 
+              ตารางเรียน: {currentClassroom.weekly_schedule || "-"}
+            </p>
+            <p className="text-[11px] text-gray-500">
+              ข้อมูล ณ วันที่ {new Date().toLocaleDateString("th-TH", { year: "numeric", month: "long", day: "numeric" })} • 
+              จำนวนนักเรียน {students.length} คน • จำนวนชิ้นงาน {submissionData.sortedAssignments.length} ชิ้น • 
+              อัตราการส่งเฉลี่ยรวม {submissionData.overallSubmissionRate}%
+            </p>
+          </div>
+
+          {/* Quick Legend Bar */}
+          <div className="flex items-center justify-between text-xs mb-3 px-2">
+            <div className="flex items-center gap-4">
+              <span className="flex items-center gap-1.5">
+                <span className="w-3.5 h-3.5 rounded bg-[#d4edda] border border-[#c3e6cb] inline-block"></span>
+                <span className="text-[#155724] font-bold text-[11px]">ส่งแล้ว (สีเขียว)</span>
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-3.5 h-3.5 rounded bg-[#f8d7da] border border-[#f5c6cb] inline-block"></span>
+                <span className="text-[#721c24] font-bold text-[11px]">ยังไม่ส่ง (สีแดง)</span>
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-3.5 h-3.5 rounded bg-[#fff3cd] border border-[#ffeeba] inline-block"></span>
+                <span className="text-[#856404] font-bold text-[11px]">รอแก้งาน (สีส้ม)</span>
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-3.5 h-3.5 rounded bg-[#ede9fe] border border-[#ddd6fe] inline-block"></span>
+                <span className="text-[#5b21b6] font-bold text-[11px]">รอสอบแก้ (สีม่วง)</span>
+              </span>
+            </div>
+            <div className="text-[11px] text-gray-500">
+              รวมส่งงานแล้วทั้งห้อง: <span className="font-bold text-emerald-700">{submissionData.totalClassSubmissions}</span> / {submissionData.totalPossibleSubmissions} ครั้ง
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-center border-collapse border border-black">
+              <thead>
+                <tr className="bg-slate-100 font-bold border border-black text-slate-900">
+                  <th className="border border-black px-2 py-2.5 w-10">เลขที่</th>
+                  <th className="border border-black px-2 py-2.5 w-24">รหัส</th>
+                  <th className="border border-black px-3 py-2.5 text-left min-w-[140px]">ชื่อ - นามสกุล</th>
+                  {submissionData.sortedAssignments.map((ass) => (
+                    <th key={ass.id} className="border border-black px-2 py-2 text-[11px] min-w-[90px] font-bold">
+                      {ass.name}
+                    </th>
+                  ))}
+                  <th className="border border-black px-2 py-2.5 bg-emerald-50 text-emerald-900 w-20">ส่งแล้ว</th>
+                  <th className="border border-black px-2 py-2.5 bg-rose-50 text-rose-900 w-20">ค้างส่ง</th>
+                  <th className="border border-black px-2 py-2.5 bg-blue-50 text-blue-900 w-16">% ส่ง</th>
+                </tr>
+              </thead>
+              <tbody>
+                {submissionData.studentRows.map((row) => (
+                  <tr key={row.student.id} className="border border-black hover:bg-slate-50/50">
+                    <td className="border border-black px-2 py-1.5">{row.orderNumber}</td>
+                    <td className="border border-black px-2 py-1.5">{row.student.student_code}</td>
+                    <td className="border border-black px-3 py-1.5 text-left font-medium">{row.fullName}</td>
+                    {row.assignmentsStatus.map((status) => {
+                      if (status.revisionStatus === "revision") {
+                        return (
+                          <td
+                            key={status.assignmentId}
+                            className="border border-black px-1.5 py-1.5 text-[11px] font-bold text-center print-status-revision bg-[#fff3cd] text-[#856404]"
+                          >
+                            รอแก้งาน
+                          </td>
+                        );
+                      }
+                      if (status.revisionStatus === "retest") {
+                        return (
+                          <td
+                            key={status.assignmentId}
+                            className="border border-black px-1.5 py-1.5 text-[11px] font-bold text-center print-status-retest bg-[#ede9fe] text-[#5b21b6]"
+                          >
+                            รอสอบแก้
+                          </td>
+                        );
+                      }
+                      return (
+                        <td
+                          key={status.assignmentId}
+                          className={`border border-black px-1.5 py-1.5 text-[11px] font-bold text-center ${
+                            status.isSubmitted
+                              ? "print-status-submitted bg-[#d4edda] text-[#155724]"
+                              : "print-status-missing bg-[#f8d7da] text-[#721c24]"
+                          }`}
+                        >
+                          {status.isSubmitted ? "ส่งแล้ว" : "ยังไม่ส่ง"}
+                        </td>
+                      );
+                    })}
+                    <td className="border border-black px-2 py-1.5 font-bold text-emerald-700 bg-emerald-50/30">
+                      {row.submittedCount}
+                    </td>
+                    <td className="border border-black px-2 py-1.5 font-bold text-rose-700 bg-rose-50/30">
+                      {row.missingCount}
+                    </td>
+                    <td className="border border-black px-2 py-1.5 font-bold text-slate-800 bg-slate-50">
+                      {row.submissionRate}%
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                {/* Summary Row 1: รวมส่งแล้ว */}
+                <tr className="bg-slate-100 font-bold border border-black text-slate-900">
+                  <td colSpan={3} className="border border-black px-3 py-2 text-right">
+                    รวมส่งแล้ว (คน)
+                  </td>
+                  {submissionData.assignmentSummaries.map((sum) => (
+                    <td
+                      key={`sub-${sum.assignment.id}`}
+                      className="border border-black px-1.5 py-2 font-bold text-[#155724] bg-[#d4edda]"
+                    >
+                      {sum.submittedCount}
+                    </td>
+                  ))}
+                  <td className="border border-black px-2 py-2 font-bold text-emerald-800 bg-emerald-100">
+                    {submissionData.totalClassSubmissions}
+                  </td>
+                  <td className="border border-black px-2 py-2 text-gray-400">-</td>
+                  <td className="border border-black px-2 py-2 text-gray-400">-</td>
+                </tr>
+
+                {/* Summary Row 2: รวมค้างส่ง */}
+                <tr className="bg-slate-100 font-bold border border-black text-slate-900">
+                  <td colSpan={3} className="border border-black px-3 py-2 text-right">
+                    รวมค้างส่ง (คน)
+                  </td>
+                  {submissionData.assignmentSummaries.map((sum) => (
+                    <td
+                      key={`miss-${sum.assignment.id}`}
+                      className="border border-black px-1.5 py-2 font-bold text-[#721c24] bg-[#f8d7da]"
+                    >
+                      {sum.missingCount}
+                    </td>
+                  ))}
+                  <td className="border border-black px-2 py-2 text-gray-400">-</td>
+                  <td className="border border-black px-2 py-2 font-bold text-rose-800 bg-rose-100">
+                    {submissionData.totalPossibleSubmissions - submissionData.totalClassSubmissions}
+                  </td>
+                  <td className="border border-black px-2 py-2 text-gray-400">-</td>
+                </tr>
+
+                {/* Summary Row 3: ร้อยละการส่ง */}
+                <tr className="bg-slate-100 font-bold border border-black text-slate-900">
+                  <td colSpan={3} className="border border-black px-3 py-2 text-right">
+                    ร้อยละการส่ง (%)
+                  </td>
+                  {submissionData.assignmentSummaries.map((sum) => (
+                    <td
+                      key={`rate-${sum.assignment.id}`}
+                      className="border border-black px-1.5 py-2 font-bold text-slate-800 bg-slate-50"
+                    >
+                      {sum.submissionRate}%
+                    </td>
+                  ))}
+                  <td className="border border-black px-2 py-2 text-gray-400">-</td>
+                  <td className="border border-black px-2 py-2 text-gray-400">-</td>
+                  <td className="border border-black px-2 py-2 font-bold text-blue-800 bg-blue-100">
+                    {submissionData.overallSubmissionRate}%
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+
+          {/* Signature block */}
+          <div className="flex justify-between pt-8 text-black text-xs">
+            <div className="text-center w-48">
+              <div className="border-b border-black h-8 w-full" />
+              <p className="mt-1.5 font-medium">ครูผู้สอน / ครูประจำวิชา</p>
+            </div>
+            <div className="text-center w-48">
+              <div className="border-b border-black h-8 w-full" />
+              <p className="mt-1.5 font-medium">หัวหน้ากลุ่มสาระฯ / ฝ่ายวิชาการ</p>
+            </div>
+          </div>
         </div>
       )}
 

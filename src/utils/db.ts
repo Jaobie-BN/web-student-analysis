@@ -34,6 +34,7 @@ export interface Classroom {
     latesPerAbsence?: number;
     scoreCalculationMethod?: 'active_rescaling' | 'deductive';
     assignment_order?: string[];
+    pending_revisions?: Record<string, "revision" | "retest">;
   };
   created_at?: string;
 }
@@ -84,6 +85,7 @@ export interface StudentScore {
   assignment_id: string;
   score: number | null;
   is_late: boolean;
+  revision_status?: "revision" | "retest" | null;
 }
 
 export interface AIReport {

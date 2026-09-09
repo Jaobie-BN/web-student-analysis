@@ -25,9 +25,11 @@ import {
   GripVertical,
   Zap,
   RotateCcw,
-  Search
+  Search,
+  Printer,
 } from "lucide-react";
 import * as XLSX from "xlsx";
+import { exportSubmissionStatusExcel } from "@/utils/submissionExport";
 
 const isLockedCategory = (name: string, gradingMode?: string) => {
   if (gradingMode === "manual") return false;
@@ -117,6 +119,7 @@ export default function GradebookPage() {
   // Filter component state (all, attendance, homework, midterm, final)
   const [filterComponent, setFilterComponent] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [exportSubmissionsLoading, setExportSubmissionsLoading] = useState(false);
 
   // Modal State for rearranging assignments
   const [showOrderModal, setShowOrderModal] = useState(false);
@@ -153,7 +156,11 @@ export default function GradebookPage() {
   // key: studentId -> assignmentId -> score record
   const [localScores, setLocalScores] = useState<{
     [studentId: string]: {
-      [assignmentId: string]: { score: number | null; isLate: boolean };
+      [assignmentId: string]: {
+        score: number | null;
+        isLate: boolean;
+        revisionStatus?: "revision" | "retest" | null;
+      };
     };
   }>({});
   
@@ -164,14 +171,21 @@ export default function GradebookPage() {
   useEffect(() => {
     if (students.length > 0 && assignments.length > 0) {
       const initialScores: typeof localScores = {};
+      const pendingRevs = currentClassroom?.behavior_config?.pending_revisions || {};
       
       students.forEach((s) => {
         initialScores[s.id] = {};
         assignments.forEach((a) => {
           const record = scores.find((sc) => sc.student_id === s.id && sc.assignment_id === a.id);
+          const revStatus =
+            record?.revision_status ||
+            pendingRevs[`${s.id}_${a.id}`] ||
+            null;
+
           initialScores[s.id][a.id] = {
             score: record ? record.score : null,
             isLate: record ? record.is_late : false,
+            revisionStatus: revStatus,
           };
         });
       });
@@ -179,7 +193,7 @@ export default function GradebookPage() {
       setLocalScores(initialScores);
       setNotification(null);
     }
-  }, [students, assignments, scores]);
+  }, [students, assignments, scores, currentClassroom]);
 
   // Sync temp order when modal opens
   useEffect(() => {
@@ -509,6 +523,38 @@ export default function GradebookPage() {
     setNotification(null);
   };
 
+  const handleRevisionToggle = (studentId: string, assignmentId: string) => {
+    setLocalScores((prev) => {
+      const cell = prev[studentId]?.[assignmentId] || {
+        score: null,
+        isLate: false,
+        revisionStatus: null,
+      };
+
+      // Cycle: null -> "revision" (รอแก้งาน) -> "retest" (รอสอบแก้) -> null (ปกติ)
+      let nextStatus: "revision" | "retest" | null = null;
+      if (!cell.revisionStatus) {
+        nextStatus = "revision";
+      } else if (cell.revisionStatus === "revision") {
+        nextStatus = "retest";
+      } else {
+        nextStatus = null;
+      }
+
+      return {
+        ...prev,
+        [studentId]: {
+          ...prev[studentId],
+          [assignmentId]: {
+            ...cell,
+            revisionStatus: nextStatus,
+          },
+        },
+      };
+    });
+    setNotification(null);
+  };
+
   const handleCheckChange = (studentId: string, assignmentId: string, checked: boolean) => {
     const targetAss = assignments.find((a) => a.id === assignmentId);
     if (!targetAss) return;
@@ -530,21 +576,34 @@ export default function GradebookPage() {
     setSaving(true);
 
     const scoresPayload: { studentId: string; assignmentId: string; score: number | null; isLate: boolean }[] = [];
+    const pendingRevisions: Record<string, "revision" | "retest"> = {};
 
     Object.keys(localScores).forEach((studentId) => {
       Object.keys(localScores[studentId]).forEach((assignmentId) => {
+        const cell = localScores[studentId][assignmentId];
         scoresPayload.push({
           studentId,
           assignmentId,
-          score: localScores[studentId][assignmentId].score,
-          isLate: localScores[studentId][assignmentId].isLate,
+          score: cell.score,
+          isLate: cell.isLate,
         });
+        if (cell.revisionStatus) {
+          pendingRevisions[`${studentId}_${assignmentId}`] = cell.revisionStatus;
+        }
       });
     });
 
     try {
       await saveScores(scoresPayload);
-      toastSuccess("บันทึกผลคะแนนและสถิติส่งงานทั้งหมดสำเร็จ!");
+      if (currentClassroom) {
+        await updateClassroom({
+          behavior_config: {
+            ...currentClassroom.behavior_config,
+            pending_revisions: pendingRevisions,
+          },
+        });
+      }
+      toastSuccess("บันทึกผลคะแนนและสถานะส่งงานทั้งหมดสำเร็จ!");
     } catch (err: any) {
       toastError(err.message || "เกิดข้อผิดพลาดในการบันทึกคะแนน");
     } finally {
@@ -674,6 +733,54 @@ export default function GradebookPage() {
     XLSX.utils.book_append_sheet(wb, ws, "ตารางคะแนน");
     XLSX.writeFile(wb, `ตารางคะแนน_${currentClassroom.name}_${new Date().toISOString().split("T")[0]}.xlsx`);
     toastSuccess("ส่งออกไฟล์ Excel ตารางคะแนนสำเร็จ!");
+  };
+
+  // Export submission status report with green/red/amber/purple cells
+  const handleExportSubmissionsExcel = async () => {
+    if (!currentClassroom) return;
+    setExportSubmissionsLoading(true);
+    try {
+      // Build latest scores and pending revisions from localScores to reflect live screen state
+      const effectiveScores: any[] = [];
+      const pendingRevisions: Record<string, "revision" | "retest"> = {};
+
+      students.forEach((s) => {
+        assignments.forEach((a) => {
+          const cell = localScores[s.id]?.[a.id];
+          if (cell && cell.score !== null) {
+            effectiveScores.push({
+              student_id: s.id,
+              assignment_id: a.id,
+              score: cell.score,
+              is_late: cell.isLate,
+              revision_status: cell.revisionStatus,
+            });
+          }
+          if (cell?.revisionStatus) {
+            pendingRevisions[`${s.id}_${a.id}`] = cell.revisionStatus;
+          }
+        });
+      });
+
+      await exportSubmissionStatusExcel({
+        classroomName: currentClassroom.name,
+        subjectCode: currentClassroom.room_code,
+        students,
+        assignments,
+        scores: effectiveScores.length > 0 ? effectiveScores : scores,
+        assignmentOrder: currentClassroom.behavior_config?.assignment_order,
+        pendingRevisions:
+          Object.keys(pendingRevisions).length > 0
+            ? pendingRevisions
+            : currentClassroom.behavior_config?.pending_revisions,
+      });
+      toastSuccess("ส่งออกรายงานสถานะการส่งงาน (Excel สี) สำเร็จแล้ว!");
+    } catch (err: any) {
+      console.error(err);
+      toastError(err?.message || "เกิดข้อผิดพลาดในการส่งออก Excel");
+    } finally {
+      setExportSubmissionsLoading(false);
+    }
   };
 
   const getComponentThaiName = (comp: string) => {
@@ -973,10 +1080,32 @@ export default function GradebookPage() {
             onClick={handleExportGrid}
             disabled={students.length === 0}
             className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs md:text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 shadow-sm transition-all cursor-pointer disabled:opacity-50"
+            title="ส่งออกตารางคะแนนสะสมและเกรดคาดการณ์ (Excel)"
           >
             <Download className="w-4 h-4 text-slate-400" />
-            <span>Export Excel</span>
+            <span>Export ตารางคะแนน</span>
           </button>
+
+          <button
+            onClick={handleExportSubmissionsExcel}
+            disabled={students.length === 0 || exportSubmissionsLoading}
+            className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-teal-50 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800 text-xs md:text-sm font-semibold text-teal-700 dark:text-teal-300 hover:bg-teal-100 dark:hover:bg-teal-900/40 shadow-sm transition-all cursor-pointer disabled:opacity-50"
+            title="ส่งออกรายงานสถานะการส่งงานของนักเรียน (เซลล์สีเขียว = ส่งแล้ว, สีแดง = ยังไม่ส่ง)"
+          >
+            <CheckSquare className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+            <span>{exportSubmissionsLoading ? "กำลังส่งออก..." : "ส่งออกสถานะการส่งงาน (Excel สี)"}</span>
+          </button>
+
+          <a
+            href="/reports?print=submissions"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs md:text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 shadow-sm transition-all cursor-pointer"
+            title="พิมพ์หรือบันทึกรายงานสถานะการส่งงานเป็นเอกสาร PDF (แนวนอน)"
+          >
+            <Printer className="w-4 h-4 text-slate-400" />
+            <span>พิมพ์รายงาน PDF</span>
+          </a>
 
           <button
             onClick={() => setShowOrderModal(true)}
@@ -1327,46 +1456,90 @@ export default function GradebookPage() {
                         
                         {/* Interactive assignment score cells */}
                         {filteredAssignments.map((assignment, aIdx) => {
-                          const cell = localScores[student.id]?.[assignment.id] || { score: null, isLate: false };
+                          const cell = localScores[student.id]?.[assignment.id] || {
+                            score: null,
+                            isLate: false,
+                            revisionStatus: null,
+                          };
                           return (
-                            <td key={assignment.id} className="px-4 py-2 border-r border-b border-slate-100 dark:border-slate-800 box-border">
-                              <div className="relative flex items-center justify-center gap-1.5">
-                                {assignment.assignment_type === "check" ? (
-                                  <input
-                                    type="checkbox"
-                                    checked={cell.score !== null && cell.score > 0}
-                                    onChange={(e) => handleCheckChange(student.id, assignment.id, e.target.checked)}
-                                    className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 accent-primary dark:accent-sky-400 bg-white dark:bg-slate-800 cursor-pointer"
-                                  />
-                                ) : (
-                                  <input
-                                    type="number"
-                                    step="any"
-                                    min="0"
-                                    max={assignment.max_score}
-                                    value={cell.score === null ? "" : cell.score}
-                                    placeholder="-"
-                                    onChange={(e) => handleScoreChange(student.id, assignment.id, e.target.value)}
-                                    className={`w-16 px-1.5 py-1 rounded-lg border text-center text-xs font-bold outline-none transition-all score-input score-input-${rowIndex}-${aIdx} ${
-                                      cell.score === null
-                                        ? "bg-rose-500/10 border-rose-500/30 text-rose-600 dark:text-rose-400 placeholder-rose-400/50"
-                                        : "bg-transparent border-transparent hover:border-slate-300 dark:hover:border-slate-600 focus:border-primary dark:focus:border-sky-400 focus:bg-white dark:focus:bg-slate-800 text-slate-800 dark:text-slate-100"
-                                    }`}
-                                    onKeyDown={(e) => handleKeyDown(e, rowIndex, aIdx)}
-                                    onFocus={(e) => e.currentTarget.select()}
-                                  />
+                            <td key={assignment.id} className="px-3 py-2 border-r border-b border-slate-100 dark:border-slate-800 box-border">
+                              <div className="relative flex flex-col items-center justify-center gap-1">
+                                <div className="flex items-center justify-center gap-1">
+                                  {assignment.assignment_type === "check" ? (
+                                    <input
+                                      type="checkbox"
+                                      checked={cell.score !== null && cell.score > 0}
+                                      onChange={(e) => handleCheckChange(student.id, assignment.id, e.target.checked)}
+                                      className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 accent-primary dark:accent-sky-400 bg-white dark:bg-slate-800 cursor-pointer"
+                                    />
+                                  ) : (
+                                    <input
+                                      type="number"
+                                      step="any"
+                                      min="0"
+                                      max={assignment.max_score}
+                                      value={cell.score === null ? "" : cell.score}
+                                      placeholder="-"
+                                      onChange={(e) => handleScoreChange(student.id, assignment.id, e.target.value)}
+                                      className={`w-16 px-1.5 py-1 rounded-lg border text-center text-xs font-bold outline-none transition-all score-input score-input-${rowIndex}-${aIdx} ${
+                                        cell.revisionStatus === "revision"
+                                          ? "bg-amber-500/10 border-amber-400 dark:border-amber-500 text-amber-700 dark:text-amber-300"
+                                          : cell.revisionStatus === "retest"
+                                          ? "bg-purple-500/10 border-purple-400 dark:border-purple-500 text-purple-700 dark:text-purple-300"
+                                          : cell.score === null
+                                          ? "bg-rose-500/10 border-rose-500/30 text-rose-600 dark:text-rose-400 placeholder-rose-400/50"
+                                          : "bg-transparent border-transparent hover:border-slate-300 dark:hover:border-slate-600 focus:border-primary dark:focus:border-sky-400 focus:bg-white dark:focus:bg-slate-800 text-slate-800 dark:text-slate-100"
+                                      }`}
+                                      onKeyDown={(e) => handleKeyDown(e, rowIndex, aIdx)}
+                                      onFocus={(e) => e.currentTarget.select()}
+                                    />
+                                  )}
+                                  
+                                  <div className="flex flex-col gap-0.5">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleLateToggle(student.id, assignment.id)}
+                                      className={`p-0.5 rounded transition-all cursor-pointer ${
+                                        cell.isLate ? "text-amber-500 scale-110" : "text-slate-300 dark:text-slate-600 hover:text-slate-500 dark:hover:text-slate-400 opacity-20 group-hover:opacity-100"
+                                      }`}
+                                      title="ส่งช้า (Late)"
+                                    >
+                                      <Clock className="w-3 h-3" />
+                                    </button>
+
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRevisionToggle(student.id, assignment.id)}
+                                      className={`p-0.5 rounded transition-all cursor-pointer ${
+                                        cell.revisionStatus === "revision"
+                                          ? "text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-950/80 scale-110"
+                                          : cell.revisionStatus === "retest"
+                                          ? "text-purple-600 dark:text-purple-400 bg-purple-100 dark:bg-purple-950/80 scale-110"
+                                          : "text-slate-300 dark:text-slate-600 hover:text-slate-500 dark:hover:text-slate-400 opacity-20 group-hover:opacity-100"
+                                      }`}
+                                      title={`สถานะงาน: ${
+                                        cell.revisionStatus === "revision"
+                                          ? "รอแก้งาน (คลิกเพื่อเปลี่ยนเป็น 'รอสอบแก้')"
+                                          : cell.revisionStatus === "retest"
+                                          ? "รอสอบแก้ (คลิกเพื่อยกเลิก)"
+                                          : "ปกติ (คลิกเพื่อระบุ 'รอแก้งาน')"
+                                      }`}
+                                    >
+                                      <RotateCcw className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                </div>
+
+                                {cell.revisionStatus === "revision" && (
+                                  <span className="text-[9px] font-bold text-amber-700 dark:text-amber-300 bg-amber-100/90 dark:bg-amber-950/90 px-1 py-0.5 rounded leading-none border border-amber-300/40">
+                                    รอแก้งาน
+                                  </span>
                                 )}
-                                
-                                <button
-                                  type="button"
-                                  onClick={() => handleLateToggle(student.id, assignment.id)}
-                                  className={`p-0.5 rounded transition-all cursor-pointer ${
-                                    cell.isLate ? "text-amber-500 scale-110" : "text-slate-300 dark:text-slate-600 hover:text-slate-500 dark:hover:text-slate-400 opacity-20 group-hover:opacity-100"
-                                  }`}
-                                  title="ส่งช้า (Late)"
-                                >
-                                  <Clock className="w-3.5 h-3.5" />
-                                </button>
+                                {cell.revisionStatus === "retest" && (
+                                  <span className="text-[9px] font-bold text-purple-700 dark:text-purple-300 bg-purple-100/90 dark:bg-purple-950/90 px-1 py-0.5 rounded leading-none border border-purple-300/40">
+                                    รอสอบแก้
+                                  </span>
+                                )}
                               </div>
                             </td>
                           );
